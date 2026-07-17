@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fiabus — Ponctualité &amp; fiabilité des bus Tadao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c131b;
+    --panel:#131c27;
+    --panel-2:#1a2531;
+    --border: rgba(255,255,255,.08);
+    --amber:#f5a93c;
+    --amber-soft: rgba(245,169,60,.14);
+    --teal:#2bbfae;
+    --teal-soft: rgba(43,191,174,.14);
+    --red:#e2543f;
+    --red-soft: rgba(226,84,63,.14);
+    --green:#4caf7d;
+    --green-soft: rgba(76,175,125,.14);
+    --text:#e9eef3;
+    --muted:#8093a6;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(43,191,174,.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom:78px;
+  }
+
+  /* ---------- TOPBAR ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 18px 14px;
+    position:sticky;
+    top:0;
+    background:linear-gradient(var(--bg) 70%, transparent);
+    z-index:20;
+  }
+  .wordmark{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:1px;
+    color:var(--text);
+  }
+  .wordmark span{ color:var(--amber); }
+  .wordmark small{
+    display:block;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:400;
+    font-size:10.5px;
+    letter-spacing:.4px;
+    color:var(--muted);
+    margin-top:1px;
+  }
+  .btn-add{
+    background:var(--amber);
+    color:#1a1204;
+    border:none;
+    border-radius:999px;
+    padding:9px 16px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 4px 14px rgba(245,169,60,.25);
+  }
+  .btn-add:active{ transform:scale(.97); }
+
+  main{ flex:1; padding:4px 18px 24px; }
+
+  /* ---------- BANNER ---------- */
+  .banner{
+    background:var(--amber-soft);
+    border:1px solid rgba(245,169,60,.3);
+    color:var(--amber);
+    font-size:12px;
+    line-height:1.5;
+    padding:10px 12px;
+    border-radius:12px;
+    margin-bottom:16px;
+  }
+
+  /* ---------- SEARCH ---------- */
+  .search-wrap{ position:relative; margin-bottom:16px; }
+  .search-wrap input{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px 12px 38px;
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14.5px;
+    outline:none;
+  }
+  .search-wrap input::placeholder{ color:var(--muted); }
+  .search-wrap input:focus{ border-color:var(--teal); }
+  .search-icon{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:15px; height:15px; opacity:.55;
+  }
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:22px 2px 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::after{
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* ---------- LINE CARD ---------- */
+  .line-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    cursor:pointer;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .line-card:active{ transform:scale(.985); }
+  .line-card:hover{ border-color:rgba(255,255,255,.18); }
+  .line-badge{
+    flex-shrink:0;
+    width:46px; height:46px;
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    text-align:center;
+    padding:2px;
+    line-height:1.1;
+    overflow:hidden;
+  }
+  .line-info{ flex:1; min-width:0; }
+  .line-name{ font-weight:600; font-size:15px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .line-meta{ font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .trust-pill{
+    flex-shrink:0;
+    display:flex; flex-direction:column; align-items:center;
+    padding:6px 10px;
+    border-radius:10px;
+    min-width:52px;
+  }
+  .trust-num{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; line-height:1; }
+  .trust-label{ font-size:9px; text-transform:uppercase; letter-spacing:.5px; margin-top:3px; opacity:.85; }
+
+  .tone-green{ background:var(--green-soft); color:var(--green); }
+  .tone-amber{ background:var(--amber-soft); color:var(--amber); }
+  .tone-red{ background:var(--red-soft); color:var(--red); }
+  .tone-teal{ background:var(--teal-soft); color:var(--teal); }
+
+  /* ---------- FLAP DIGIT (signature element) ---------- */
+  .flap-row{ display:inline-flex; gap:2px; }
+  .flap-tile{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    background:#0a0f15;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,.08);
+    padding:2px 4px;
+    transform-origin:center 55%;
+    animation:flapDown .5s cubic-bezier(.2,.8,.3,1) both;
+  }
+  @keyframes flapDown{
+    0%{ transform:rotateX(90deg); opacity:0; }
+    60%{ transform:rotateX(-8deg); opacity:1; }
+    100%{ transform:rotateX(0deg); }
+  }
+
+  /* ---------- EMPTY / LOADING ---------- */
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+  }
+  .empty-state .big-emoji{ font-size:34px; margin-bottom:10px; display:block; }
+  .empty-state h3{ color:var(--text); font-size:15.5px; margin:0 0 6px; }
+  .empty-state p{ font-size:13px; line-height:1.5; margin:0; }
+  .loading-row{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; padding:30px 4px; }
+  .spinner{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid var(--border); border-top-color:var(--teal);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- LINE DETAIL ---------- */
+  .back-btn{
+    display:flex; align-items:center; gap:6px;
+    background:none; border:none; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif; font-size:13.5px;
+    cursor:pointer; padding:4px 0 14px;
+  }
+  .detail-hero{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:6px;
+    text-align:center;
+  }
+  .detail-hero .line-badge{ margin:0 auto 12px; width:56px; height:56px; font-size:17px; }
+  .detail-hero .big-trust{ font-size:40px; }
+  .detail-hero .trust-label{ font-size:11px; }
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+    margin-top:16px;
+  }
+  .stat-box{
+    background:var(--panel-2);
+    border-radius:10px;
+    padding:10px 6px;
+  }
+  .stat-box .v{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; }
+  .stat-box .l{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+
+  .pass-item{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:13px 15px;
+    margin-bottom:9px;
+  }
+  .pass-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .pass-time{ font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); }
+  .delta-badge{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700; font-size:12.5px;
+    padding:3px 9px; border-radius:999px;
+    white-space:nowrap;
+  }
+  .pass-stars{ display:flex; gap:14px; margin-top:8px; font-size:12px; color:var(--muted); }
+  .pass-stars b{ color:var(--text); }
+  .pass-comment{ font-size:13px; color:var(--text); margin-top:8px; line-height:1.4; opacity:.9; }
+  .pass-foot{ font-size:11px; color:var(--muted); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .bus-chip{ background:var(--panel-2); padding:2px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottomnav{
+    position:fixed; bottom:0; left:0; right:0;
+    max-width:480px; margin:0 auto;
+    background:rgba(19,28,39,.92);
+    backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);
+    display:flex;
+    z-index:20;
+  }
+  .bottomnav button{
+    flex:1; background:none; border:none; color:var(--muted);
+    padding:12px 0 10px; font-family:'Space Grotesk',sans-serif; font-size:11.5px;
+    cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .bottomnav button svg{ width:19px; height:19px; }
+  .bottomnav button.active{ color:var(--teal); }
+
+  /* ---------- SHEET / FORM ---------- */
+  .sheet-overlay{
+    position:fixed; inset:0; background:rgba(4,8,12,.6);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:50; opacity:1; transition:opacity .2s ease;
+  }
+  .sheet-overlay.hidden{ display:none; }
+  .sheet{
+    width:100%; max-width:480px;
+    background:var(--panel);
+    border-radius:22px 22px 0 0;
+    border:1px solid var(--border);
+    border-bottom:none;
+    padding:20px 20px 26px;
+    max-height:88vh;
+    overflow-y:auto;
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{ transform:translateY(30px); opacity:.4; } to{ transform:translateY(0); opacity:1; } }
+  .sheet-handle{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 16px; }
+  .sheet h2{ font-size:18px; margin:0 0 4px; }
+  .sheet .sub{ color:var(--muted); font-size:12.5px; margin:0 0 18px; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; }
+  .field input, .field textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:11px 12px;
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    outline:none;
+  }
+  .field input:focus, .field textarea:focus{ border-color:var(--teal); }
+  .field textarea{ resize:vertical; min-height:60px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .star-input{ display:flex; gap:8px; }
+  .star-input button{
+    background:none; border:none; font-size:26px; cursor:pointer;
+    color:var(--border); line-height:1; padding:2px;
+  }
+  .star-input button.on{ color:var(--amber); }
+  .delta-preview{
+    font-family:'JetBrains Mono',monospace; font-size:13px;
+    padding:9px 12px; border-radius:10px; margin-top:2px;
+    background:var(--panel-2); color:var(--muted);
+  }
+  .submit-btn{
+    width:100%; background:var(--teal); color:#04211d; border:none;
+    padding:14px; border-radius:12px; font-weight:700; font-size:14.5px;
+    font-family:'Space Grotesk',sans-serif; cursor:pointer; margin-top:6px;
+  }
+  .submit-btn:disabled{ opacity:.5; }
+  .cancel-btn{
+    width:100%; background:none; color:var(--muted); border:none;
+    padding:10px; font-size:13px; cursor:pointer; margin-top:4px;
+  }
+  .toast{
+    position:fixed; bottom:88px; left:50%; transform:translateX(-50%);
+    background:var(--teal); color:#04211d; font-weight:600; font-size:13px;
+    padding:10px 18px; border-radius:999px; z-index:60;
+    max-width:88%; text-align:center;
+    animation:toastIn .25s ease, toastOut .25s ease 2.6s forwards;
+  }
+  .toast.err{ background:var(--red); color:#2a0805; }
+  @keyframes toastIn{ from{ opacity:0; transform:translate(-50%,10px);} to{opacity:1; transform:translate(-50%,0);} }
+  @keyframes toastOut{ to{ opacity:0; } }
+
+  .settings-block{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; }
+  .settings-block h3{ font-size:13.5px; margin:0 0 10px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.5px; }
+  .settings-block p{ font-size:13px; line-height:1.6; color:var(--text); margin:0 0 12px; opacity:.85; }
+  .ghost-btn{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:10px 14px; border-radius:10px; font-size:13px; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .danger-btn{ color:var(--red); }
+
+  /* ---------- PICKER (choix ligne / arrêt) ---------- */
+  .picker-btn{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 12px; color:var(--text); font-family:'Space Grotesk',sans-serif; font-size:14px;
+    display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;
+  }
+  .picker-btn .ph{ color:var(--muted); }
+  .picker-btn svg{ width:16px; height:16px; opacity:.6; flex-shrink:0; margin-left:8px; transition:transform .15s ease; }
+  .picker-btn.open svg{ transform:rotate(180deg); }
+  .picker-btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .picker-panel{
+    margin-top:8px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:10px; overflow:hidden;
+  }
+  .picker-panel.hidden{ display:none; }
+  .picker-search{
+    width:100%; border:none; border-bottom:1px solid var(--border);
+    background:transparent; padding:10px 12px; color:var(--text);
+    font-family:'Space Grotesk',sans-serif; font-size:13.5px; outline:none;
+  }
+  .picker-list{ max-height:260px; overflow-y:auto; }
+  .picker-option{
+    padding:10px 12px; font-size:13.5px; cursor:pointer;
+    border-bottom:1px solid rgba(255,255,255,.05);
+  }
+  .picker-option:last-child{ border-bottom:none; }
+  .picker-option:active{ background:rgba(255,255,255,.06); }
+  .picker-option.selected{ color:var(--teal); }
+  .picker-option .desc{ display:block; font-size:11.5px; color:var(--muted); margin-top:1px; }
+  .picker-option.muted-opt{ color:var(--muted); font-style:italic; }
+  .picker-empty{ padding:14px 12px; font-size:12.5px; color:var(--muted); text-align:center; }
+  .custom-row{ padding:10px 12px; border-top:1px solid var(--border); display:none; gap:8px; }
+  .custom-row.show{ display:flex; }
+  .custom-row input{
+    flex:1; background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-size:13.5px; font-family:'Space Grotesk',sans-serif; outline:none;
+  }
+  .custom-row button{
+    background:var(--teal); color:#04211d; border:none; border-radius:8px;
+    padding:0 12px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .field-error{ color:var(--red); font-size:11.5px; margin-top:6px; display:none; }
+  .field-error.show{ display:block; }
+  .has-error .picker-btn{ border-color:var(--red); }
+  .has-error .star-input{ outline:1px solid var(--red); border-radius:8px; padding:2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="wordmark">FIA<span>BUS</span><small>Réseau Tadao · fiabilité communautaire</small></div>
+    <button class="btn-add" id="openSheetBtn">＋ Signaler</button>
+  </div>
+  <main id="view"></main>
+  <nav class="bottomnav">
+    <button data-view="dashboard" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      Lignes
+    </button>
+    <button data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Réglages
+    </button>
+  </nav>
+</div>
+
+<div class="sheet-overlay hidden" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Signaler un passage</h2>
+    <p class="sub">Votre retour aide les autres voyageurs à savoir à quoi s'attendre.</p>
+    <form id="ratingForm" novalidate>
+
+      <div class="field" id="lineField">
+        <label>Ligne</label>
+        <button type="button" class="picker-btn" id="lineBtn">
+          <span class="ph" id="lineBtnLabel">Choisir une ligne…</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="picker-panel hidden" id="linePanel">
+          <input type="text" class="picker-search" id="lineSearch" placeholder="Rechercher (ex. B1, 10, RER1…)">
+          <div class="picker-list" id="lineList"></div>
+          <div class="custom-row" id="lineCustomRow">
+            <input type="text" id="lineCustomInput" placeholder="Nom / numéro de la ligne">
+            <button type="button" id="lineCustomOk">OK</button>
+          </div>
+        </div>
+        <div class="field-error" id="lineError">Merci de choisir une ligne.</div>
+      </div>
+
+      <div class="field" id="stopField">
+        <label>Arrêt (optionnel)</label>
+        <button type="button" class="picker-btn" id="stopBtn" disabled>
+          <span class="ph" id="stopBtnLabel">Choisissez d'abord une ligne</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="picker-panel hidden" id="stopPanel">
+          <input type="text" class="picker-search" id="stopSearch" placeholder="Rechercher un arrêt…">
+          <div class="picker-list" id="stopList"></div>
+          <div class="custom-row" id="stopCustomRow">
+            <input type="text" id="stopCustomInput" placeholder="Nom de l'arrêt">
+            <button type="button" id="stopCustomOk">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field" id="scheduledField">
+          <label>Heure prévue</label>
+          <input type="time" id="f-scheduled">
+          <div class="field-error" id="scheduledError">Heure prévue manquante.</div>
+        </div>
+        <div class="field" id="actualField">
+          <label>Heure réelle</label>
+          <input type="time" id="f-actual">
+          <div class="field-error" id="actualError">Heure réelle manquante.</div>
+        </div>
+      </div>
+      <div class="field" id="deltaPreviewWrap" style="display:none;">
+        <div class="delta-preview" id="deltaPreview"></div>
+      </div>
+      <div class="field">
+        <label>Numéro de bus / immatriculation (optionnel)</label>
+        <input type="text" id="f-bus" placeholder="visible sur le pare-brise" autocomplete="off">
+      </div>
+      <div class="field" id="drivingField">
+        <label>Qualité de la conduite</label>
+        <div class="star-input" data-target="driving">
+          <button type="button" data-v="1">★</button>
+          <button type="button" data-v="2">★</button>
+          <button type="button" data-v="3">★</button>
+          <button type="button" data-v="4">★</button>
+          <button type="button" data-v="5">★</button>
+        </div>
+        <div class="field-error" id="drivingError">Merci de noter la conduite.</div>
+      </div>
+      <div class="field" id="experienceField">
+        <label>Expérience à bord (confort, accueil…)</label>
+        <div class="star-input" data-target="experience">
+          <button type="button" data-v="1">★</button>
+          <button type="button" data-v="2">★</button>
+          <button type="button" data-v="3">★</button>
+          <button type="button" data-v="4">★</button>
+          <button type="button" data-v="5">★</button>
+        </div>
+        <div class="field-error" id="experienceError">Merci de noter l'expérience à bord.</div>
+      </div>
+      <div class="field">
+        <label>Commentaire (optionnel)</label>
+        <textarea id="f-comment" placeholder="Un détail utile pour les autres voyageurs ?"></textarea>
+      </div>
+      <div class="field">
+        <label>Votre pseudo (optionnel, affiché avec vos avis)</label>
+        <input type="text" id="f-pseudo" placeholder="Anonyme" autocomplete="off">
+      </div>
+      <button type="submit" class="submit-btn" id="submitBtn">Publier le signalement</button>
+      <button type="button" class="cancel-btn" id="cancelBtn">Annuler</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- REFERENCE DATA (réseau Tadao — Artois-Gohelle) ----------------
+  // Lignes Bulles (BHNS) + lignes principales connues. La liste n'est pas exhaustive
+  // (le réseau compte plus de 40 lignes + circuits scolaires) : l'option "Ligne non
+  // listée" permet d'ajouter toute autre ligne, qui rejoindra ensuite cette liste
+  // pour les autres voyageurs au fil des signalements.
+  const LINE_DEFS = [
+    { code:'B1',  desc:'Liévin Université ↔ Noyelles-Godault Europe' },
+    { code:'B2',  desc:'Beuvry Ballon ↔ Houdain Marne / Barlin Collège Moulin' },
+    { code:'B3',  desc:'Avion Lebas ↔ Vendin-le-Vieil Centre Cial.' },
+    { code:'B4',  desc:'Annezin Stade ↔ Beuvry Hôpital' },
+    { code:'B5',  desc:'Libercourt Gare ↔ Lens Gares' },
+    { code:'B6',  desc:'Auchel Anatole-France ↔ Bruay Europe' },
+    { code:'B7',  desc:'Hénin-Beaumont Espace Lumière ↔ Libercourt Gare' },
+    { code:'RER1',desc:'Béthune ↔ Saint-Pol-sur-Ternoise' },
+    { code:'10',  desc:'Oblinghem Mairie ↔ Beuvry Gorre / Gare' },
+    { code:'11',  desc:'Grenay Guadeloupe / Noyelles-les-Vermelles ↔ Lens Gares' },
+  ];
+  const STOPS_BY_LINE = {
+    'B1':   ['Université (Liévin)','Lycée H. Darras','Rollencourt','Nauticaa','Centre (Liévin)','Grands Bureaux',
+             'Haute-Ville','Jean Jaurès','Liévin Louvre-Lens','Gymnase Hochman','Parc Louvre-Lens','Bollaert-Delelis',
+             'Gares (Lens)','Centre-Ville (Lens)','Pont de Douai','Henri Barbusse','Laon','Hôtel de Ville','Cimetière',
+             'Germinal','10 Mars 1906','Europe - Quai 4/5 (Noyelles-Godault)'],
+    'B2':   ['Grand Ballon (Beuvry)','Mairie (Beuvry)','Hôpital - Quai 2 (Beuvry)',"Université d'Artois (Béthune)",
+             'Lycées (Béthune)','André Malraux','Horlogerie','Gare - Quai 5 (Béthune)','La Rotonde','Mont-Liébaut',
+             'Actipolis','Porte Nord Ccial','Europe - Quai 2 (Bruay-la-Buissière)','Bodelot',
+             'Marne (Houdain)','Somme (Houdain)','Collège Moulin - Quai 1/2 (Barlin)','Grand Place (Barlin)'],
+    'B3':   ['Lebas (Avion)','Vendin-le-Vieil - Centre Cial.'],
+    'B4':   ['Stade (Annezin)','Hôpital (Beuvry)'],
+    'B5':   ['Gare (Libercourt)'],
+    'B6':   ['Anatole-France (Auchel)','Mairie (Auchel)','Lycée Lavoisier','Évrard','Chateaubriand','Belfort',
+             'Mairie (Calonne-Ricouart)','Joliot-Curie (Calonne-Ricouart)','Église (Burbure)','Europe (Bruay)'],
+    'B7':   ['Espace Lumière (Hénin-Beaumont)','Gare (Hénin-Beaumont)','Albert Schweitzer','Rimbaud',
+             'Noyelles-Godault','Dourges','Oignies','Gare - Quais 3/4 (Libercourt)'],
+    'RER1': ['Béthune Gare','Saint-Pol-sur-Ternoise'],
+    '10':   ['Oblinghem Mairie','Beuvry Gorre','Beuvry Gare'],
+    '11':   ['Grenay Guadeloupe','Noyelles-les-Vermelles Centre Commercial'],
+  };
+  const HUB_STOPS = ['Lens Gares','Béthune Gare','Liévin Université','Noyelles-Godault Europe',
+    'Hénin-Beaumont Espace Lumière','Libercourt Gare','Bruay Europe','Auchel Anatole-France'];
+
+  // ---------------- STORAGE ----------------
+  // 3 niveaux de repli :
+  // 1) window.storage : disponible uniquement quand l'appli tourne comme artefact dans Claude.ai.
+  //    C'est le seul mode où les signalements sont vraiment PARTAGÉS entre tous les voyageurs.
+  // 2) localStorage : disponible une fois le fichier téléchargé et ouvert dans un navigateur.
+  //    Les signalements survivent au rafraîchissement, mais restent uniquement sur cet appareil.
+  // 3) mémoire JS : dernier recours si même localStorage est bloqué (session uniquement).
+  const memoryStore = { shared:{}, personal:{} };
+  const hasRealStorage = !!(window.storage && typeof window.storage.get === 'function');
+  let hasLocalStorage = false;
+  try{
+    const testKey = '__fiabus_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+    hasLocalStorage = true;
+  }catch(e){ hasLocalStorage = false; }
+
+  const storageMode = hasRealStorage ? 'shared' : (hasLocalStorage ? 'local' : 'memory');
+  const LS_PREFIX = 'fiabus:';
+  function lsKey(key, shared){ return LS_PREFIX + (shared ? 'shared:' : 'personal:') + key; }
+
+  const safeStorage = {
+    async get(key, shared){
+      if(hasRealStorage) return window.storage.get(key, shared);
+      if(hasLocalStorage){
+        const raw = localStorage.getItem(lsKey(key, shared));
+        if(raw === null) throw new Error('not found');
+        return { key, value: raw, shared };
+      }
+      const store = shared ? memoryStore.shared : memoryStore.personal;
+      if(!(key in store)) throw new Error('not found');
+      return { key, value: store[key], shared };
+    },
+    async set(key, value, shared){
+      if(hasRealStorage) return window.storage.set(key, value, shared);
+      if(hasLocalStorage){
+        localStorage.setItem(lsKey(key, shared), value);
+        return { key, value, shared };
+      }
+      const store = shared ? memoryStore.shared : memoryStore.personal;
+      store[key] = value;
+      return { key, value, shared };
+    },
+    async delete(key, shared){
+      if(hasRealStorage) return window.storage.delete(key, shared);
+      if(hasLocalStorage){
+        localStorage.removeItem(lsKey(key, shared));
+        return { key, deleted:true, shared };
+      }
+      const store = shared ? memoryStore.shared : memoryStore.personal;
+      delete store[key];
+      return { key, deleted:true, shared };
+    }
+  };
+
+  function withTimeout(promise, ms){
+    return Promise.race([
+      promise,
+      new Promise((_, reject)=> setTimeout(()=> reject(new Error('timeout')), ms))
+    ]);
+  }
+
+  // ---------------- STATE ----------------
+  let allRatings = [];
+  let dataLoaded = false;
+  let currentView = { name: 'dashboard' };
+  let starValues = { driving: 0, experience: 0 };
+  let recentLines = [];
+  let pseudo = '';
+  let selectedLine = '';
+  let selectedStop = '';
+
+  const view = document.getElementById('view');
+  const sheetOverlay = document.getElementById('sheetOverlay');
+
+  // ---------------- DATA HELPERS ----------------
+  async function loadRatings(){
+    try{
+      const res = await withTimeout(safeStorage.get('ratings-data', true), 6000);
+      allRatings = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){ allRatings = []; }
+    dataLoaded = true;
+  }
+
+  // Sauvegarde en arrière-plan : ne bloque jamais l'interface. L'entrée est déjà
+  // visible localement (ajout optimiste dans allRatings) avant cet appel.
+  async function persistRatingInBackground(entry){
+    try{
+      let latest = [];
+      try{
+        const res = await withTimeout(safeStorage.get('ratings-data', true), 6000);
+        latest = res && res.value ? JSON.parse(res.value) : [];
+      }catch(e){ latest = []; }
+      if(!latest.some(r => r.id === entry.id)) latest.push(entry);
+      await withTimeout(safeStorage.set('ratings-data', JSON.stringify(latest), true), 6000);
+    }catch(e){
+      console.warn('Fiabus: synchronisation différée impossible', e);
+      showToast('Enregistré sur cet appareil, synchronisation en attente', true);
+    }
+  }
+
+  async function loadSettings(){
+    try{
+      const r = await withTimeout(safeStorage.get('recent-lines', false), 6000);
+      recentLines = r && r.value ? JSON.parse(r.value) : [];
+    }catch(e){ recentLines = []; }
+    try{
+      const p = await withTimeout(safeStorage.get('pseudo', false), 6000);
+      pseudo = p && p.value ? p.value : '';
+    }catch(e){ pseudo = ''; }
+  }
+
+  async function rememberLine(line){
+    recentLines = [line, ...recentLines.filter(l => l.toLowerCase() !== line.toLowerCase())].slice(0,8);
+    try{ await safeStorage.set('recent-lines', JSON.stringify(recentLines), false); }catch(e){}
+  }
+  async function savePseudo(p){
+    pseudo = p;
+    try{ await safeStorage.set('pseudo', p, false); }catch(e){}
+  }
+  async function clearLocalData(){
+    try{ await safeStorage.delete('recent-lines', false); }catch(e){}
+    try{ await safeStorage.delete('pseudo', false); }catch(e){}
+    recentLines = []; pseudo = '';
+  }
+
+  function communityLineCodes(){
+    const known = new Set(LINE_DEFS.map(l=>l.code.toLowerCase()));
+    const set = new Set();
+    allRatings.forEach(r=>{ if(r.line && !known.has(r.line.toLowerCase())) set.add(r.line); });
+    return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
+  }
+  function communityStopsForLine(line){
+    const set = new Set();
+    allRatings.forEach(r=>{
+      if(r.line && r.line.toLowerCase() === line.toLowerCase() && r.stop) set.add(r.stop);
+    });
+    return Array.from(set);
+  }
+
+  // ---------------- SCORING ----------------
+  function lineStats(lineName){
+    const rows = allRatings.filter(r => r.line.toLowerCase() === lineName.toLowerCase());
+    if(rows.length === 0) return null;
+    const avgDelta = rows.reduce((s,r)=>s+r.delta,0)/rows.length;
+    const avgAbsDelta = rows.reduce((s,r)=>s+Math.abs(r.delta),0)/rows.length;
+    const avgDriving = rows.reduce((s,r)=>s+r.driving,0)/rows.length;
+    const avgExperience = rows.reduce((s,r)=>s+r.experience,0)/rows.length;
+    const punctuality = Math.max(0, 100 - avgAbsDelta*8);
+    const trust = Math.round(0.5*punctuality + 0.3*(avgDriving/5*100) + 0.2*(avgExperience/5*100));
+    return { count: rows.length, avgDelta, avgAbsDelta, avgDriving, avgExperience, trust, rows: rows.slice().sort((a,b)=> b.createdAt - a.createdAt) };
+  }
+  function allLines(){
+    const set = new Set(allRatings.map(r => r.line));
+    return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
+  }
+  function trustTone(trust){ if(trust>=75) return 'tone-green'; if(trust>=50) return 'tone-amber'; return 'tone-red'; }
+  function trustWord(trust){ if(trust>=75) return 'FIABLE'; if(trust>=50) return 'MOYEN'; return 'À ÉVITER'; }
+  function deltaTone(delta){
+    if(Math.abs(delta) <= 1) return 'tone-green';
+    if(delta > 1 && delta <= 5) return 'tone-amber';
+    if(delta > 5) return 'tone-red';
+    return 'tone-teal';
+  }
+  function deltaLabel(delta){
+    if(Math.abs(delta) <= 1) return `À l'heure`;
+    if(delta > 0) return `+${delta} min (retard)`;
+    return `${delta} min (avance)`;
+  }
+  function flapHtml(text){
+    return `<span class="flap-row">${String(text).split('').map((ch,i)=>
+      `<span class="flap-tile" style="animation-delay:${i*55}ms">${ch}</span>`).join('')}</span>`;
+  }
+  function starsHtml(n){ let s=''; for(let i=1;i<=5;i++){ s += i<=Math.round(n) ? '★' : '☆'; } return s; }
+  function timeAgo(ts){
+    const diff = Date.now()-ts; const mins = Math.floor(diff/60000);
+    if(mins<1) return `à l'instant`;
+    if(mins<60) return `il y a ${mins} min`;
+    const hrs = Math.floor(mins/60);
+    if(hrs<24) return `il y a ${hrs} h`;
+    return `il y a ${Math.floor(hrs/24)} j`;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function showToast(msg, isErr){
+    const t = document.createElement('div');
+    t.className = 'toast' + (isErr ? ' err' : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(()=> t.remove(), 2900);
+  }
+
+  // ---------------- RENDER: VIEWS ----------------
+  function render(){
+    if(currentView.name === 'dashboard') renderDashboard();
+    else if(currentView.name === 'detail') renderDetail(currentView.line);
+    else if(currentView.name === 'settings') renderSettings();
+  }
+
+  function renderDashboard(){
+    if(!dataLoaded){
+      view.innerHTML = `<div class="loading-row"><span class="spinner"></span> Chargement des lignes…</div>`;
+      return;
+    }
+    const q = (currentView.query || '').toLowerCase().trim();
+    let lines = allLines();
+    if(q) lines = lines.filter(l => l.toLowerCase().includes(q));
+
+    let html = '';
+    if(storageMode === 'local'){
+      html += `<div class="banner">Copie locale : vos signalements sont conservés sur cet appareil (ils résistent au rafraîchissement) mais ne sont pas partagés avec les autres voyageurs. Pour un carnet vraiment partagé, utilisez l'appli depuis Claude.ai.</div>`;
+    }else if(storageMode === 'memory'){
+      html += `<div class="banner">Stockage indisponible dans ce navigateur : les signalements seront perdus au rafraîchissement de la page.</div>`;
+    }
+    html += `
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#8093a6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Chercher une ligne (ex. B1, 10…)" value="${escapeHtml(currentView.query||'')}">
+      </div>
+    `;
+
+    if(lines.length === 0){
+      html += `
+        <div class="empty-state">
+          <span class="big-emoji">🚌</span>
+          <h3>${q ? 'Aucune ligne trouvée' : `Aucun signalement pour l'instant`}</h3>
+          <p>${q ? 'Essayez un autre numéro de ligne.' : `Soyez le premier à signaler un passage — appuyez sur « Signaler » pour noter la ponctualité et la conduite d'un bus.`}</p>
+        </div>`;
+      view.innerHTML = html;
+      attachSearchHandler();
+      return;
+    }
+
+    html += `<div class="section-label">${lines.length} ligne${lines.length>1?'s':''} suivie${lines.length>1?'s':''}</div>`;
+    lines.forEach(line=>{
+      const stats = lineStats(line);
+      const tone = trustTone(stats.trust);
+      const word = trustWord(stats.trust);
+      const deltaTxt = stats.avgDelta > 0 ? `+${Math.round(stats.avgDelta)} min` : `${Math.round(stats.avgDelta)} min`;
+      html += `
+        <div class="line-card" data-line="${escapeHtml(line)}">
+          <div class="line-badge" style="${line.length>4?'font-size:12px;':''}">${escapeHtml(line)}</div>
+          <div class="line-info">
+            <div class="line-name">Ligne ${escapeHtml(line)}</div>
+            <div class="line-meta">
+              <span class="mono">${deltaTxt} en moy.</span>
+              <span>·</span>
+              <span>${stats.count} avis</span>
+            </div>
+          </div>
+          <div class="trust-pill ${tone}">
+            <div class="trust-num">${flapHtml(stats.trust)}</div>
+            <div class="trust-label">${word}</div>
+          </div>
+        </div>`;
+    });
+
+    view.innerHTML = html;
+    attachSearchHandler();
+    document.querySelectorAll('.line-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        currentView = { name:'detail', line: card.getAttribute('data-line') };
+        render();
+        window.scrollTo(0,0);
+      });
+    });
+  }
+
+  function attachSearchHandler(){
+    const el = document.getElementById('searchInput');
+    if(!el) return;
+    el.addEventListener('input', (e)=>{
+      currentView.query = e.target.value;
+      renderDashboard();
+      const el2 = document.getElementById('searchInput');
+      if(el2){ el2.focus(); el2.setSelectionRange(el2.value.length, el2.value.length); }
+    });
+  }
+
+  function renderDetail(line){
+    const stats = lineStats(line);
+    if(!stats){ currentView = {name:'dashboard'}; render(); return; }
+    const tone = trustTone(stats.trust);
+    const word = trustWord(stats.trust);
+    const toneVar = tone.replace('tone-','');
+
+    let html = `
+      <button class="back-btn" id="backBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Toutes les lignes
+      </button>
+      <div class="detail-hero">
+        <div class="line-badge" style="${line.length>4?'font-size:13px;':''}">${escapeHtml(line)}</div>
+        <div class="trust-num big-trust" style="color:var(--${toneVar})">${flapHtml(stats.trust)}</div>
+        <div class="trust-label" style="color:var(--${toneVar})">${word}</div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="v">${stats.avgDelta>0?'+':''}${Math.round(stats.avgDelta)} min</div><div class="l">Ponctualité</div></div>
+          <div class="stat-box"><div class="v">${stats.avgDriving.toFixed(1)}★</div><div class="l">Conduite</div></div>
+          <div class="stat-box"><div class="v">${stats.avgExperience.toFixed(1)}★</div><div class="l">À bord</div></div>
+        </div>
+      </div>
+      <div class="section-label">${stats.count} passage${stats.count>1?'s':''} signalé${stats.count>1?'s':''}</div>
+    `;
+
+    stats.rows.forEach(r=>{
+      const dtone = deltaTone(r.delta);
+      html += `
+        <div class="pass-item">
+          <div class="pass-top">
+            <span class="pass-time mono">${r.scheduled} → ${r.actual}${r.stop ? ' · '+escapeHtml(r.stop) : ''}</span>
+            <span class="delta-badge ${dtone}">${deltaLabel(r.delta)}</span>
+          </div>
+          <div class="pass-stars">
+            <span>Conduite <b>${starsHtml(r.driving)}</b></span>
+            <span>À bord <b>${starsHtml(r.experience)}</b></span>
+          </div>
+          ${r.comment ? `<div class="pass-comment">"${escapeHtml(r.comment)}"</div>` : ''}
+          <div class="pass-foot">
+            ${r.bus ? `<span class="bus-chip">Bus ${escapeHtml(r.bus)}</span>` : ''}
+            <span>${escapeHtml(r.pseudo || 'Anonyme')} · ${timeAgo(r.createdAt)}</span>
+          </div>
+        </div>`;
+    });
+
+    view.innerHTML = html;
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      currentView = { name:'dashboard', query: currentView.query };
+      render();
+    });
+  }
+
+  function renderSettings(){
+    view.innerHTML = `
+      <div class="section-label">À propos</div>
+      <div class="settings-block">
+        <h3>Comment ça marche</h3>
+        <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle). Chaque signalement compare l'heure prévue et l'heure réelle de passage, et note la conduite ainsi que l'expérience à bord. Les scores de fiabilité par ligne sont visibles par tous les voyageurs.</p>
+        <p>La liste des lignes proposées couvre les Bulles B1 à B7, la RER1 et quelques lignes principales. Si votre ligne n'y figure pas, utilisez « Ligne non listée » — elle sera ensuite proposée aux autres.</p>
+        <p>Les arrêts détaillés sont disponibles pour B1, B2, B6 et B7. Pour les autres lignes, seuls les terminus et les pôles d'échange principaux sont proposés : utilisez « Arrêt non listé » pour ajouter un arrêt manquant, il rejoindra ensuite la liste pour tout le monde.</p>
+        ${storageMode==='local' ? `<p style="color:var(--amber);">Vous utilisez une copie locale de Fiabus : vos signalements restent sur cet appareil (ils survivent au rafraîchissement) mais ne sont pas visibles par les autres voyageurs. Pour un carnet réellement partagé entre tous, ouvrez l'appli directement depuis Claude.ai.</p>` : ''}
+        ${storageMode==='memory' ? `<p style="color:var(--amber);">Le stockage du navigateur n'est pas accessible ici : vos signalements ne sont conservés que le temps de cette session et disparaîtront au rafraîchissement.</p>` : ''}
+      </div>
+      <div class="section-label">Préférences locales</div>
+      <div class="settings-block">
+        <h3>Pseudo enregistré</h3>
+        <p>${pseudo ? `Actuellement : <b>${escapeHtml(pseudo)}</b>` : 'Aucun pseudo enregistré — vos avis sont anonymes.'}</p>
+        <button class="ghost-btn danger-btn" id="clearLocalBtn">Réinitialiser mes préférences</button>
+      </div>
+    `;
+    const btn = document.getElementById('clearLocalBtn');
+    if(btn) btn.addEventListener('click', async ()=>{
+      await clearLocalData();
+      renderSettings();
+      showToast('Préférences réinitialisées');
+    });
+  }
+
+  // ---------------- NAV ----------------
+  document.querySelectorAll('.bottomnav button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = { name: btn.getAttribute('data-view') };
+      render();
+      window.scrollTo(0,0);
+    });
+  });
+
+  // ---------------- PICKERS (ligne / arrêt) ----------------
+  const lineBtn = document.getElementById('lineBtn');
+  const lineBtnLabel = document.getElementById('lineBtnLabel');
+  const linePanel = document.getElementById('linePanel');
+  const lineList = document.getElementById('lineList');
+  const lineSearch = document.getElementById('lineSearch');
+  const lineCustomRow = document.getElementById('lineCustomRow');
+  const lineCustomInput = document.getElementById('lineCustomInput');
+
+  const stopBtn = document.getElementById('stopBtn');
+  const stopBtnLabel = document.getElementById('stopBtnLabel');
+  const stopPanel = document.getElementById('stopPanel');
+  const stopList = document.getElementById('stopList');
+  const stopSearch = document.getElementById('stopSearch');
+  const stopCustomRow = document.getElementById('stopCustomRow');
+  const stopCustomInput = document.getElementById('stopCustomInput');
+
+  function closeAllPanels(){
+    linePanel.classList.add('hidden'); lineBtn.classList.remove('open');
+    stopPanel.classList.add('hidden'); stopBtn.classList.remove('open');
+  }
+
+  function renderLineList(filter){
+    const f = (filter||'').toLowerCase().trim();
+    const extra = communityLineCodes().map(code=>({code, desc:'Signalée par la communauté'}));
+    const combined = [...LINE_DEFS, ...extra];
+    const items = combined.filter(l => !f || l.code.toLowerCase().includes(f) || l.desc.toLowerCase().includes(f));
+    let html = '';
+    if(items.length === 0){
+      html += `<div class="picker-empty">Aucune ligne ne correspond.</div>`;
+    }else{
+      items.forEach(l=>{
+        html += `<div class="picker-option${l.code===selectedLine?' selected':''}" data-code="${escapeHtml(l.code)}">
+          ${escapeHtml(l.code)}<span class="desc">${escapeHtml(l.desc)}</span>
+        </div>`;
+      });
+    }
+    html += `<div class="picker-option muted-opt" id="lineOtherOpt">+ Ligne non listée…</div>`;
+    lineList.innerHTML = html;
+    lineList.querySelectorAll('.picker-option[data-code]').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        chooseLine(opt.getAttribute('data-code'));
+      });
+    });
+    document.getElementById('lineOtherOpt').addEventListener('click', ()=>{
+      lineCustomRow.classList.add('show');
+      lineCustomInput.focus();
+    });
+  }
+
+  function chooseLine(code){
+    selectedLine = code;
+    lineBtnLabel.textContent = 'Ligne ' + code;
+    lineBtnLabel.classList.remove('ph');
+    document.getElementById('lineField').classList.remove('has-error');
+    document.getElementById('lineError').classList.remove('show');
+    closeAllPanels();
+    lineCustomRow.classList.remove('show');
+    lineCustomInput.value = '';
+    // reset stop when line changes
+    selectedStop = '';
+    stopBtnLabel.textContent = 'Choisir un arrêt (optionnel)…';
+    stopBtnLabel.classList.add('ph');
+    stopBtn.disabled = false;
+  }
+
+  lineBtn.addEventListener('click', ()=>{
+    const willOpen = linePanel.classList.contains('hidden');
+    closeAllPanels();
+    if(willOpen){
+      linePanel.classList.remove('hidden');
+      lineBtn.classList.add('open');
+      lineSearch.value = '';
+      renderLineList('');
+      lineSearch.focus();
+    }
+  });
+  lineSearch.addEventListener('input', ()=> renderLineList(lineSearch.value));
+  lineCustomInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); confirmCustomLine(); } });
+  document.getElementById('lineCustomOk').addEventListener('click', confirmCustomLine);
+  function confirmCustomLine(){
+    const v = lineCustomInput.value.trim();
+    if(!v) return;
+    chooseLine(v);
+  }
+
+  function renderStopList(filter){
+    if(!selectedLine) return;
+    const f = (filter||'').toLowerCase().trim();
+    const predefined = STOPS_BY_LINE[selectedLine.toUpperCase()] || [];
+    const community = communityStopsForLine(selectedLine);
+    const combined = Array.from(new Set([...predefined, ...community, ...HUB_STOPS]));
+    const items = combined.filter(s => !f || s.toLowerCase().includes(f));
+    let html = `<div class="picker-option muted-opt" id="stopNoneOpt">Sans arrêt précis</div>`;
+    if(items.length === 0){
+      html += `<div class="picker-empty">Aucun arrêt ne correspond.</div>`;
+    }else{
+      items.forEach(s=>{
+        html += `<div class="picker-option${s===selectedStop?' selected':''}" data-stop="${escapeHtml(s)}">${escapeHtml(s)}</div>`;
+      });
+    }
+    html += `<div class="picker-option muted-opt" id="stopOtherOpt">+ Arrêt non listé…</div>`;
+    stopList.innerHTML = html;
+    document.getElementById('stopNoneOpt').addEventListener('click', ()=> chooseStop(''));
+    stopList.querySelectorAll('.picker-option[data-stop]').forEach(opt=>{
+      opt.addEventListener('click', ()=> chooseStop(opt.getAttribute('data-stop')));
+    });
+    document.getElementById('stopOtherOpt').addEventListener('click', ()=>{
+      stopCustomRow.classList.add('show');
+      stopCustomInput.focus();
+    });
+  }
+
+  function chooseStop(stop){
+    selectedStop = stop;
+    if(stop){
+      stopBtnLabel.textContent = stop;
+      stopBtnLabel.classList.remove('ph');
+    }else{
+      stopBtnLabel.textContent = 'Choisir un arrêt (optionnel)…';
+      stopBtnLabel.classList.add('ph');
+    }
+    closeAllPanels();
+    stopCustomRow.classList.remove('show');
+    stopCustomInput.value = '';
+  }
+
+  stopBtn.addEventListener('click', ()=>{
+    if(stopBtn.disabled) return;
+    const willOpen = stopPanel.classList.contains('hidden');
+    closeAllPanels();
+    if(willOpen){
+      stopPanel.classList.remove('hidden');
+      stopBtn.classList.add('open');
+      stopSearch.value = '';
+      renderStopList('');
+      stopSearch.focus();
+    }
+  });
+  stopSearch.addEventListener('input', ()=> renderStopList(stopSearch.value));
+  stopCustomInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); confirmCustomStop(); } });
+  document.getElementById('stopCustomOk').addEventListener('click', confirmCustomStop);
+  function confirmCustomStop(){
+    const v = stopCustomInput.value.trim();
+    if(!v) return;
+    chooseStop(v);
+  }
+
+  // close panels if tapping outside them within the sheet
+  document.getElementById('ratingForm').addEventListener('click', (e)=>{
+    if(!e.target.closest('#lineField') && !linePanel.classList.contains('hidden')) closeAllPanels();
+    if(!e.target.closest('#stopField') && !stopPanel.classList.contains('hidden')) closeAllPanels();
+  });
+
+  // ---------------- SHEET OPEN/CLOSE ----------------
+  const form = document.getElementById('ratingForm');
+  const openSheetBtn = document.getElementById('openSheetBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function resetForm(){
+    form.reset();
+    starValues = { driving:0, experience:0 };
+    document.querySelectorAll('.star-input button').forEach(b=>b.classList.remove('on'));
+    document.getElementById('deltaPreviewWrap').style.display = 'none';
+    selectedLine = ''; selectedStop = '';
+    lineBtnLabel.textContent = 'Choisir une ligne…'; lineBtnLabel.classList.add('ph');
+    stopBtnLabel.textContent = `Choisissez d'abord une ligne`; stopBtnLabel.classList.add('ph');
+    stopBtn.disabled = true;
+    closeAllPanels();
+    lineCustomRow.classList.remove('show'); stopCustomRow.classList.remove('show');
+    ['lineField','stopField','scheduledField','actualField','drivingField','experienceField'].forEach(id=>{
+      document.getElementById(id).classList.remove('has-error');
+    });
+    document.querySelectorAll('.field-error').forEach(el=>el.classList.remove('show'));
+  }
+
+  function openSheet(){
+    sheetOverlay.classList.remove('hidden');
+    document.getElementById('f-pseudo').value = pseudo;
+  }
+  function closeSheet(){
+    sheetOverlay.classList.add('hidden');
+    resetForm();
+  }
+  openSheetBtn.addEventListener('click', openSheet);
+  cancelBtn.addEventListener('click', closeSheet);
+  sheetOverlay.addEventListener('click', (e)=>{ if(e.target === sheetOverlay) closeSheet(); });
+
+  document.querySelectorAll('.star-input').forEach(group=>{
+    const target = group.getAttribute('data-target');
+    group.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const v = parseInt(btn.getAttribute('data-v'),10);
+        starValues[target] = v;
+        group.querySelectorAll('button').forEach(b=>{
+          b.classList.toggle('on', parseInt(b.getAttribute('data-v'),10) <= v);
+        });
+        document.getElementById(target+'Field').classList.remove('has-error');
+        document.getElementById(target+'Error').classList.remove('show');
+      });
+    });
+  });
+
+  function toMinutes(hhmm){
+    if(!hhmm) return null;
+    const parts = hhmm.split(':').map(Number);
+    if(parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+    return parts[0]*60+parts[1];
+  }
+  function updateDeltaPreview(){
+    const s = toMinutes(document.getElementById('f-scheduled').value);
+    const a = toMinutes(document.getElementById('f-actual').value);
+    const wrap = document.getElementById('deltaPreviewWrap');
+    const el = document.getElementById('deltaPreview');
+    if(s === null || a === null){ wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    el.textContent = 'Écart calculé : ' + deltaLabel(a - s);
+  }
+  document.getElementById('f-scheduled').addEventListener('input', ()=>{
+    updateDeltaPreview();
+    document.getElementById('scheduledField').classList.remove('has-error');
+    document.getElementById('scheduledError').classList.remove('show');
+  });
+  document.getElementById('f-actual').addEventListener('input', ()=>{
+    updateDeltaPreview();
+    document.getElementById('actualField').classList.remove('has-error');
+    document.getElementById('actualError').classList.remove('show');
+  });
+
+  // ---------------- VALIDATION + SUBMIT ----------------
+  function markError(fieldId, errorId){
+    document.getElementById(fieldId).classList.add('has-error');
+    document.getElementById(errorId).classList.add('show');
+  }
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+
+    const scheduled = document.getElementById('f-scheduled').value;
+    const actual = document.getElementById('f-actual').value;
+    let firstErrorField = null;
+
+    let hasError = false;
+    if(!selectedLine){ markError('lineField','lineError'); hasError = true; firstErrorField = firstErrorField || 'lineField'; }
+    if(!scheduled){ markError('scheduledField','scheduledError'); hasError = true; firstErrorField = firstErrorField || 'scheduledField'; }
+    if(!actual){ markError('actualField','actualError'); hasError = true; firstErrorField = firstErrorField || 'actualField'; }
+    if(starValues.driving === 0){ markError('drivingField','drivingError'); hasError = true; firstErrorField = firstErrorField || 'drivingField'; }
+    if(starValues.experience === 0){ markError('experienceField','experienceError'); hasError = true; firstErrorField = firstErrorField || 'experienceField'; }
+
+    if(hasError){
+      showToast('Merci de compléter les champs en rouge', true);
+      const el = document.getElementById(firstErrorField);
+      if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+
+    const bus = document.getElementById('f-bus').value.trim();
+    const comment = document.getElementById('f-comment').value.trim();
+    const p = document.getElementById('f-pseudo').value.trim();
+    const delta = toMinutes(actual) - toMinutes(scheduled);
+
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
+      line: selectedLine, stop: selectedStop, scheduled, actual, delta, bus,
+      driving: starValues.driving,
+      experience: starValues.experience,
+      comment, pseudo: p,
+      createdAt: Date.now()
+    };
+
+    // Ajout optimiste : l'entrée apparaît immédiatement, sans attendre le réseau.
+    allRatings.push(entry);
+    const savedLine = selectedLine;
+    closeSheet();
+    currentView = { name:'detail', line: savedLine };
+    render();
+    showToast('Signalement publié — merci !');
+
+    // Persistance et préférences en arrière-plan (n'empêche jamais l'affichage ci-dessus).
+    persistRatingInBackground(entry);
+    if(p) savePseudo(p).catch(()=>{});
+    rememberLine(savedLine).catch(()=>{});
+  });
+
+  // ---------------- INIT ----------------
+  async function init(){
+    render();
+    await Promise.all([loadRatings(), loadSettings()]);
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
