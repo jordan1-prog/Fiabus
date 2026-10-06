@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fiabus-v2';
+const CACHE_NAME = 'fiabus-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -23,8 +23,6 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Réseau d'abord pour la coquille de l'appli (toujours la dernière version si en ligne),
-// repli sur le cache uniquement hors-ligne. Les appels Supabase/fonts passent directement.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;

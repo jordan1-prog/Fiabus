@@ -1,7 +1,7 @@
 {
-  "name": "Fiabus — Fiabilité des bus Tadao",
+  "name": "Fiabus — Trafic & ponctualité du réseau Tadao",
   "short_name": "Fiabus",
-  "description": "Carnet communautaire de ponctualité et de fiabilité pour le réseau Tadao",
+  "description": "Carnet communautaire de trafic en temps réel et de ponctualité pour le réseau Tadao",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

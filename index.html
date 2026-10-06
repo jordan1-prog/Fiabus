@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Fiabus — Ponctualité &amp; fiabilité des bus Tadao</title>
+<title>Fiabus — Trafic &amp; ponctualité du réseau Tadao</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0c131b">
 <link rel="icon" href="icon-192.png">
@@ -146,6 +146,31 @@
     content:''; flex:1; height:1px; background:var(--border);
   }
 
+  /* ---------- TRAFFIC ALERTS ---------- */
+  .alert-item{
+    background:var(--red-soft);
+    border:1px solid rgba(226,84,63,.3);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-bottom:9px;
+  }
+  .alert-top{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .alert-icon{ font-size:15px; flex-shrink:0; }
+  .alert-line-badge{
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11.5px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:6px;
+    padding:2px 7px; flex-shrink:0;
+  }
+  .alert-type{ font-weight:600; font-size:13.5px; color:var(--red); flex:1; }
+  .alert-time{ font-size:11px; color:var(--muted); flex-shrink:0; }
+  .alert-message{ font-size:13px; color:var(--text); line-height:1.4; margin-top:2px; }
+  .alert-foot{ font-size:11px; color:var(--muted); margin-top:6px; }
+  .line-alert-dot{
+    width:8px; height:8px; border-radius:50%; background:var(--red);
+    display:inline-block; margin-left:6px;
+    box-shadow:0 0 0 3px var(--red-soft);
+  }
+
   /* ---------- LINE CARD ---------- */
   .line-card{
     background:var(--panel);
@@ -177,7 +202,7 @@
     overflow:hidden;
   }
   .line-info{ flex:1; min-width:0; }
-  .line-name{ font-weight:600; font-size:15px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .line-name{ font-weight:600; font-size:15px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; }
   .line-meta{ font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .trust-pill{
     flex-shrink:0;
@@ -277,8 +302,6 @@
     padding:3px 9px; border-radius:999px;
     white-space:nowrap;
   }
-  .pass-stars{ display:flex; gap:14px; margin-top:8px; font-size:12px; color:var(--muted); }
-  .pass-stars b{ color:var(--text); }
   .pass-comment{ font-size:13px; color:var(--text); margin-top:8px; line-height:1.4; opacity:.9; }
   .pass-foot{ font-size:11px; color:var(--muted); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .bus-chip{ background:var(--panel-2); padding:2px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; }
@@ -323,6 +346,13 @@
   .sheet-handle{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 16px; }
   .sheet h2{ font-size:18px; margin:0 0 4px; }
   .sheet .sub{ color:var(--muted); font-size:12.5px; margin:0 0 18px; }
+  .mode-tabs{ display:flex; gap:8px; margin-bottom:18px; background:var(--panel-2); border-radius:12px; padding:4px; }
+  .mode-tab{
+    flex:1; text-align:center; padding:9px 6px; border-radius:9px; cursor:pointer;
+    font-size:12.5px; font-weight:600; color:var(--muted); border:none; background:none;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .mode-tab.active{ background:var(--panel); color:var(--text); }
   .field{ margin-bottom:16px; }
   .field label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; }
   .field input, .field textarea{
@@ -346,12 +376,13 @@
     padding:11px 12px; font-size:13.5px; color:var(--text);
   }
   .checkbox-row input{ width:18px; height:18px; accent-color:var(--teal); flex-shrink:0; }
-  .star-input{ display:flex; gap:8px; }
-  .star-input button{
-    background:none; border:none; font-size:26px; cursor:pointer;
-    color:var(--border); line-height:1; padding:2px;
+  .chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:8px 13px; border-radius:999px; background:var(--panel-2);
+    border:1px solid var(--border); font-size:13px; color:var(--text);
+    cursor:pointer; font-family:'Space Grotesk',sans-serif;
   }
-  .star-input button.on{ color:var(--amber); }
+  .chip.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber); }
   .delta-preview{
     font-family:'JetBrains Mono',monospace; font-size:13px;
     padding:9px 12px; border-radius:10px; margin-top:2px;
@@ -432,13 +463,13 @@
   .field-error{ color:var(--red); font-size:11.5px; margin-top:6px; display:none; }
   .field-error.show{ display:block; }
   .has-error .picker-btn{ border-color:var(--red); }
-  .has-error .star-input{ outline:1px solid var(--red); border-radius:8px; padding:2px; }
+  .has-error .chip-group{ outline:1px solid var(--red); border-radius:10px; padding:4px; }
 </style>
 </head>
 <body>
 <div id="app">
   <div class="topbar">
-    <div class="wordmark">FIA<span>BUS</span><small>Réseau Tadao · fiabilité communautaire</small></div>
+    <div class="wordmark">FIA<span>BUS</span><small>Réseau Tadao · trafic &amp; ponctualité en direct</small></div>
     <button class="btn-add" id="openSheetBtn">＋ Signaler</button>
   </div>
   <main id="view"></main>
@@ -457,8 +488,21 @@
 <div class="sheet-overlay hidden" id="sheetOverlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Signaler un passage</h2>
-    <p class="sub">Votre retour aide les autres voyageurs à savoir à quoi s'attendre.</p>
+
+    <div class="mode-tabs">
+      <button type="button" class="mode-tab active" id="tabPassage">Signalement de passage</button>
+      <button type="button" class="mode-tab" id="tabAlert">Alerte trafic</button>
+    </div>
+
+    <div id="passageHeader">
+      <h2>Signaler un passage</h2>
+      <p class="sub">Votre retour aide les autres voyageurs à savoir à quoi s'attendre.</p>
+    </div>
+    <div id="alertHeader" style="display:none;">
+      <h2>Signaler une alerte trafic</h2>
+      <p class="sub">Prévenez les autres voyageurs d'un incident en cours sur une ligne.</p>
+    </div>
+
     <form id="ratingForm" novalidate>
 
       <div class="field" id="lineField">
@@ -478,74 +522,67 @@
         <div class="field-error" id="lineError">Merci de choisir une ligne.</div>
       </div>
 
-      <div class="field" id="stopField">
-        <label>Arrêt (optionnel)</label>
-        <button type="button" class="picker-btn" id="stopBtn" disabled>
-          <span class="ph" id="stopBtnLabel">Choisissez d'abord une ligne</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="picker-panel hidden" id="stopPanel">
-          <input type="text" class="picker-search" id="stopSearch" placeholder="Rechercher un arrêt…">
-          <div class="picker-list" id="stopList"></div>
-          <div class="custom-row" id="stopCustomRow">
-            <input type="text" id="stopCustomInput" placeholder="Nom de l'arrêt">
-            <button type="button" id="stopCustomOk">OK</button>
+      <div id="passageFields">
+        <div class="field" id="stopField">
+          <label>Arrêt (optionnel)</label>
+          <button type="button" class="picker-btn" id="stopBtn" disabled>
+            <span class="ph" id="stopBtnLabel">Choisissez d'abord une ligne</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="picker-panel hidden" id="stopPanel">
+            <input type="text" class="picker-search" id="stopSearch" placeholder="Rechercher un arrêt…">
+            <div class="picker-list" id="stopList"></div>
+            <div class="custom-row" id="stopCustomRow">
+              <input type="text" id="stopCustomInput" placeholder="Nom de l'arrêt">
+              <button type="button" id="stopCustomOk">OK</button>
+            </div>
           </div>
         </div>
+
+        <div class="field">
+          <label class="checkbox-row" for="f-noshow">
+            <input type="checkbox" id="f-noshow">
+            <span>Le bus n'est pas passé du tout à l'horaire prévu</span>
+          </label>
+        </div>
+
+        <div class="row2" id="timeRow">
+          <div class="field" id="scheduledField">
+            <label>Heure prévue</label>
+            <input type="time" id="f-scheduled">
+            <div class="field-error" id="scheduledError">Heure prévue manquante.</div>
+          </div>
+          <div class="field" id="actualField">
+            <label>Heure réelle</label>
+            <input type="time" id="f-actual">
+            <div class="field-error" id="actualError">Heure réelle manquante.</div>
+          </div>
+        </div>
+        <div class="field" id="deltaPreviewWrap" style="display:none;">
+          <div class="delta-preview" id="deltaPreview"></div>
+        </div>
+        <div class="field" id="busField">
+          <label>Numéro de bus / immatriculation (optionnel)</label>
+          <input type="text" id="f-bus" placeholder="visible sur le pare-brise" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Commentaire (optionnel)</label>
+          <textarea id="f-comment" placeholder="Un détail utile pour les autres voyageurs ?"></textarea>
+        </div>
       </div>
 
-      <div class="field">
-        <label class="checkbox-row" for="f-noshow">
-          <input type="checkbox" id="f-noshow">
-          <span>Le bus n'est pas passé du tout à l'horaire prévu</span>
-        </label>
+      <div id="alertFields" style="display:none;">
+        <div class="field" id="typeField">
+          <label>Type d'alerte</label>
+          <div class="chip-group" id="typeChips"></div>
+          <div class="field-error" id="typeError">Merci de choisir un type d'alerte.</div>
+        </div>
+        <div class="field">
+          <label>Détails (optionnel)</label>
+          <textarea id="f-alert-message" placeholder="Ex. durée estimée, raison, itinéraire de déviation…"></textarea>
+        </div>
       </div>
 
-      <div class="row2" id="timeRow">
-        <div class="field" id="scheduledField">
-          <label>Heure prévue</label>
-          <input type="time" id="f-scheduled">
-          <div class="field-error" id="scheduledError">Heure prévue manquante.</div>
-        </div>
-        <div class="field" id="actualField">
-          <label>Heure réelle</label>
-          <input type="time" id="f-actual">
-          <div class="field-error" id="actualError">Heure réelle manquante.</div>
-        </div>
-      </div>
-      <div class="field" id="deltaPreviewWrap" style="display:none;">
-        <div class="delta-preview" id="deltaPreview"></div>
-      </div>
-      <div class="field" id="busField">
-        <label>Numéro de bus / immatriculation (optionnel)</label>
-        <input type="text" id="f-bus" placeholder="visible sur le pare-brise" autocomplete="off">
-      </div>
-      <div class="field" id="drivingField">
-        <label>Qualité de la conduite</label>
-        <div class="star-input" data-target="driving">
-          <button type="button" data-v="1">★</button>
-          <button type="button" data-v="2">★</button>
-          <button type="button" data-v="3">★</button>
-          <button type="button" data-v="4">★</button>
-          <button type="button" data-v="5">★</button>
-        </div>
-        <div class="field-error" id="drivingError">Merci de noter la conduite.</div>
-      </div>
-      <div class="field" id="experienceField">
-        <label>Expérience à bord (confort, accueil…)</label>
-        <div class="star-input" data-target="experience">
-          <button type="button" data-v="1">★</button>
-          <button type="button" data-v="2">★</button>
-          <button type="button" data-v="3">★</button>
-          <button type="button" data-v="4">★</button>
-          <button type="button" data-v="5">★</button>
-        </div>
-        <div class="field-error" id="experienceError">Merci de noter l'expérience à bord.</div>
-      </div>
-      <div class="field">
-        <label>Commentaire (optionnel)</label>
-        <textarea id="f-comment" placeholder="Un détail utile pour les autres voyageurs ?"></textarea>
-      </div>
       <div class="field">
         <label>Votre pseudo (optionnel, affiché avec vos avis)</label>
         <input type="text" id="f-pseudo" placeholder="Anonyme" autocomplete="off">
@@ -561,10 +598,6 @@
   "use strict";
 
   // ---------------- REFERENCE DATA (réseau Tadao — Artois-Gohelle) ----------------
-  // Lignes Bulles (BHNS) + lignes principales connues. La liste n'est pas exhaustive
-  // (le réseau compte plus de 40 lignes + circuits scolaires) : l'option "Ligne non
-  // listée" permet d'ajouter toute autre ligne, qui rejoindra ensuite cette liste
-  // pour les autres voyageurs au fil des signalements.
   const LINE_DEFS = [
     { code:'B1',  desc:'Liévin Université ↔ Noyelles-Godault Europe' },
     { code:'B2',  desc:'Beuvry Ballon ↔ Houdain Marne / Barlin Collège Moulin' },
@@ -598,6 +631,18 @@
   const HUB_STOPS = ['Lens Gares','Béthune Gare','Liévin Université','Noyelles-Godault Europe',
     'Hénin-Beaumont Espace Lumière','Libercourt Gare','Bruay Europe','Auchel Anatole-France'];
 
+  const ALERT_TYPES = [
+    { code:'retard',   label:'Retard important', icon:'⏱️' },
+    { code:'supprime', label:'Bus supprimé',      icon:'🚫' },
+    { code:'deviation',label:'Déviation',         icon:'↪️' },
+    { code:'incident', label:'Accident / Incident', icon:'⚠️' },
+    { code:'travaux',  label:'Travaux',           icon:'🚧' },
+    { code:'complet',  label:'Bus complet',       icon:'🧍' },
+    { code:'greve',    label:'Grève',             icon:'✊' },
+    { code:'autre',    label:'Autre',             icon:'ℹ️' },
+  ];
+  const ALERT_ACTIVE_HOURS = 4; // une alerte reste visible 4h après sa publication
+
   // ---------------- SUPABASE (base de données partagée) ----------------
   const SUPABASE_URL = 'https://aobvgrmnnojgocpmdcne.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYnZncm1ubm9qZ29jcG1kY25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTg0NTIsImV4cCI6MjA5OTc3NDQ1Mn0.5Lp6o58uYLlU24cVrWBwt7s7_-X-_mLtvizrkKusUGA';
@@ -607,7 +652,7 @@
   function rowToEntry(row){
     return {
       id: row.id, line: row.line, stop: row.stop || '', scheduled: row.scheduled, actual: row.actual,
-      delta: row.delta, bus: row.bus || '', driving: row.driving, experience: row.experience,
+      delta: row.delta, bus: row.bus || '',
       comment: row.comment || '', pseudo: row.pseudo || '', noShow: !!row.no_show,
       createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
     };
@@ -618,11 +663,19 @@
       actual: entry.noShow ? null : entry.actual,
       delta: entry.noShow ? null : entry.delta,
       bus: entry.noShow ? null : (entry.bus || null),
-      driving: entry.noShow ? null : entry.driving,
-      experience: entry.noShow ? null : entry.experience,
       comment: entry.comment || null, pseudo: entry.pseudo || null,
       no_show: !!entry.noShow
     };
+  }
+  function rowToAlert(row){
+    return {
+      id: row.id, line: row.line, type: row.type, message: row.message || '',
+      pseudo: row.pseudo || '',
+      createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+    };
+  }
+  function alertToRow(a){
+    return { id: a.id, line: a.line, type: a.type, message: a.message || null, pseudo: a.pseudo || null };
   }
 
   function withTimeout(promise, ms){
@@ -639,16 +692,17 @@
     remove(key){ try{ localStorage.removeItem('fiabus:'+key); }catch(e){} }
   };
 
-
   // ---------------- STATE ----------------
   let allRatings = [];
+  let allAlerts = [];
   let dataLoaded = false;
   let currentView = { name: 'dashboard' };
-  let starValues = { driving: 0, experience: 0 };
   let recentLines = [];
   let pseudo = '';
   let selectedLine = '';
   let selectedStop = '';
+  let selectedAlertType = '';
+  let sheetMode = 'passage'; // 'passage' | 'alert'
 
   const view = document.getElementById('view');
   const sheetOverlay = document.getElementById('sheetOverlay');
@@ -656,23 +710,23 @@
   // ---------------- DATA HELPERS ----------------
   async function loadRatings(){
     try{
-      const { data, error } = await withTimeout(
+      const [ratingsRes, alertsRes] = await withTimeout(Promise.all([
         sb.from('ratings').select('*').order('created_at', { ascending:false }),
-        8000
-      );
-      if(error) throw error;
-      allRatings = (data || []).map(rowToEntry);
+        sb.from('alerts').select('*').order('created_at', { ascending:false })
+      ]), 8000);
+      if(ratingsRes.error) throw ratingsRes.error;
+      if(alertsRes.error) throw alertsRes.error;
+      allRatings = (ratingsRes.data || []).map(rowToEntry);
+      allAlerts = (alertsRes.data || []).map(rowToAlert);
       connectionError = false;
     }catch(e){
-      console.warn('Fiabus: chargement des signalements impossible', e);
-      allRatings = [];
+      console.warn('Fiabus: chargement impossible', e);
+      allRatings = []; allAlerts = [];
       connectionError = true;
     }
     dataLoaded = true;
   }
 
-  // Sauvegarde en arrière-plan : ne bloque jamais l'interface. L'entrée est déjà
-  // visible localement (ajout optimiste dans allRatings) avant cet appel.
   async function persistRatingInBackground(entry){
     try{
       const { error } = await withTimeout(sb.from('ratings').insert([entryToRow(entry)]), 8000);
@@ -682,15 +736,31 @@
       showToast("Enregistré sur cet appareil, synchronisation en attente", true);
     }
   }
+  async function persistAlertInBackground(alert){
+    try{
+      const { error } = await withTimeout(sb.from('alerts').insert([alertToRow(alert)]), 8000);
+      if(error) throw error;
+    }catch(e){
+      console.warn('Fiabus: synchronisation impossible', e);
+      showToast("Enregistré sur cet appareil, synchronisation en attente", true);
+    }
+  }
 
-  // Mise à jour en direct : les signalements des autres voyageurs apparaissent sans rafraîchir.
   function subscribeToLiveUpdates(){
     try{
       sb.channel('ratings-live')
         .on('postgres_changes', { event:'INSERT', schema:'public', table:'ratings' }, (payload)=>{
           const entry = rowToEntry(payload.new);
-          if(allRatings.some(r => r.id === entry.id)) return; // déjà ajouté localement (notre propre envoi)
+          if(allRatings.some(r => r.id === entry.id)) return;
           allRatings.unshift(entry);
+          render();
+        })
+        .subscribe();
+      sb.channel('alerts-live')
+        .on('postgres_changes', { event:'INSERT', schema:'public', table:'alerts' }, (payload)=>{
+          const a = rowToAlert(payload.new);
+          if(allAlerts.some(x => x.id === a.id)) return;
+          allAlerts.unshift(a);
           render();
         })
         .subscribe();
@@ -719,6 +789,7 @@
     const known = new Set(LINE_DEFS.map(l=>l.code.toLowerCase()));
     const set = new Set();
     allRatings.forEach(r=>{ if(r.line && !known.has(r.line.toLowerCase())) set.add(r.line); });
+    allAlerts.forEach(a=>{ if(a.line && !known.has(a.line.toLowerCase())) set.add(a.line); });
     return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
   }
   function communityStopsForLine(line){
@@ -729,30 +800,42 @@
     return Array.from(set);
   }
 
-  // ---------------- SCORING ----------------
+  function activeAlertsForLine(line){
+    const cutoff = Date.now() - ALERT_ACTIVE_HOURS*3600*1000;
+    return allAlerts.filter(a => a.line.toLowerCase() === line.toLowerCase() && a.createdAt >= cutoff)
+                     .sort((a,b)=> b.createdAt - a.createdAt);
+  }
+  function allActiveAlerts(){
+    const cutoff = Date.now() - ALERT_ACTIVE_HOURS*3600*1000;
+    return allAlerts.filter(a => a.createdAt >= cutoff).sort((a,b)=> b.createdAt - a.createdAt);
+  }
+  function alertTypeInfo(code){
+    return ALERT_TYPES.find(t=>t.code===code) || { code, label: code, icon:'ℹ️' };
+  }
+
+  // ---------------- SCORING (ponctualité uniquement) ----------------
   function lineStats(lineName){
     const rows = allRatings.filter(r => r.line.toLowerCase() === lineName.toLowerCase());
-    if(rows.length === 0) return null;
+    const alerts = activeAlertsForLine(lineName);
+    if(rows.length === 0 && alerts.length === 0) return null;
     const passed = rows.filter(r => !r.noShow);
     const noShowCount = rows.length - passed.length;
-    const noShowRate = noShowCount / rows.length;
+    const noShowRate = rows.length ? noShowCount / rows.length : 0;
     const avgDelta = passed.length ? passed.reduce((s,r)=>s+r.delta,0)/passed.length : 0;
     const avgAbsDelta = passed.length ? passed.reduce((s,r)=>s+Math.abs(r.delta),0)/passed.length : 0;
-    const avgDriving = passed.length ? passed.reduce((s,r)=>s+r.driving,0)/passed.length : 0;
-    const avgExperience = passed.length ? passed.reduce((s,r)=>s+r.experience,0)/passed.length : 0;
     const punctuality = passed.length ? Math.max(0, 100 - avgAbsDelta*8) : 100;
-    const drivingScore = passed.length ? (avgDriving/5*100) : 50;
-    const experienceScore = passed.length ? (avgExperience/5*100) : 50;
-    const baseTrust = 0.5*punctuality + 0.3*drivingScore + 0.2*experienceScore;
-    const trust = Math.max(0, Math.round(baseTrust - noShowRate*100));
+    const trust = rows.length ? Math.max(0, Math.round(punctuality - noShowRate*100)) : 0;
     return {
-      count: rows.length, avgDelta, avgAbsDelta, avgDriving, avgExperience, trust,
+      count: rows.length, avgDelta, avgAbsDelta, trust,
       noShowCount, noShowRate,
+      activeAlerts: alerts,
       rows: rows.slice().sort((a,b)=> b.createdAt - a.createdAt)
     };
   }
   function allLines(){
-    const set = new Set(allRatings.map(r => r.line));
+    const set = new Set();
+    allRatings.forEach(r=> set.add(r.line));
+    allAlerts.forEach(a=> set.add(a.line));
     return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
   }
   function trustTone(trust){ if(trust>=75) return 'tone-green'; if(trust>=50) return 'tone-amber'; return 'tone-red'; }
@@ -772,7 +855,6 @@
     return `<span class="flap-row">${String(text).split('').map((ch,i)=>
       `<span class="flap-tile" style="animation-delay:${i*55}ms">${ch}</span>`).join('')}</span>`;
   }
-  function starsHtml(n){ let s=''; for(let i=1;i<=5;i++){ s += i<=Math.round(n) ? '★' : '☆'; } return s; }
   function timeAgo(ts){
     const diff = Date.now()-ts; const mins = Math.floor(diff/60000);
     if(mins<1) return `à l'instant`;
@@ -791,6 +873,20 @@
     document.body.appendChild(t);
     setTimeout(()=> t.remove(), 2900);
   }
+  function alertItemHtml(a, showLine){
+    const info = alertTypeInfo(a.type);
+    return `
+      <div class="alert-item">
+        <div class="alert-top">
+          <span class="alert-icon">${info.icon}</span>
+          ${showLine ? `<span class="alert-line-badge">${escapeHtml(a.line)}</span>` : ''}
+          <span class="alert-type">${escapeHtml(info.label)}</span>
+          <span class="alert-time">${timeAgo(a.createdAt)}</span>
+        </div>
+        ${a.message ? `<div class="alert-message">${escapeHtml(a.message)}</div>` : ''}
+        <div class="alert-foot">${escapeHtml(a.pseudo || 'Anonyme')}</div>
+      </div>`;
+  }
 
   // ---------------- RENDER: VIEWS ----------------
   function render(){
@@ -801,7 +897,7 @@
 
   function renderDashboard(){
     if(!dataLoaded){
-      view.innerHTML = `<div class="loading-row"><span class="spinner"></span> Chargement des lignes…</div>`;
+      view.innerHTML = `<div class="loading-row"><span class="spinner"></span> Chargement…</div>`;
       return;
     }
     const q = (currentView.query || '').toLowerCase().trim();
@@ -812,6 +908,13 @@
     if(connectionError){
       html += `<div class="banner">Connexion au serveur impossible pour le moment. Vos prochains signalements seront tentés dès que la connexion reviendra.</div>`;
     }
+
+    const activeAlerts = allActiveAlerts();
+    if(activeAlerts.length > 0 && !q){
+      html += `<div class="section-label">🚦 Alertes en cours (${activeAlerts.length})</div>`;
+      activeAlerts.slice(0, 8).forEach(a=>{ html += alertItemHtml(a, true); });
+    }
+
     html += `
       <div class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#8093a6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -824,7 +927,7 @@
         <div class="empty-state">
           <span class="big-emoji">🚌</span>
           <h3>${q ? 'Aucune ligne trouvée' : `Aucun signalement pour l'instant`}</h3>
-          <p>${q ? 'Essayez un autre numéro de ligne.' : `Soyez le premier à signaler un passage — appuyez sur « Signaler » pour noter la ponctualité et la conduite d'un bus.`}</p>
+          <p>${q ? 'Essayez un autre numéro de ligne.' : `Soyez le premier à signaler un passage ou une alerte — appuyez sur « Signaler ».`}</p>
         </div>`;
       view.innerHTML = html;
       attachSearchHandler();
@@ -834,22 +937,24 @@
     html += `<div class="section-label">${lines.length} ligne${lines.length>1?'s':''} suivie${lines.length>1?'s':''}</div>`;
     lines.forEach(line=>{
       const stats = lineStats(line);
-      const tone = trustTone(stats.trust);
-      const word = trustWord(stats.trust);
-      const deltaTxt = stats.avgDelta > 0 ? `+${Math.round(stats.avgDelta)} min` : `${Math.round(stats.avgDelta)} min`;
+      if(!stats) return;
+      const hasActiveAlert = stats.activeAlerts.length > 0;
+      const tone = stats.count ? trustTone(stats.trust) : 'tone-amber';
+      const word = stats.count ? trustWord(stats.trust) : 'ALERTE';
+      const trustDisplay = stats.count ? stats.trust : '—';
+      const deltaTxt = stats.count ? (stats.avgDelta > 0 ? `+${Math.round(stats.avgDelta)} min` : `${Math.round(stats.avgDelta)} min`) : 'pas de données';
       html += `
         <div class="line-card" data-line="${escapeHtml(line)}">
           <div class="line-badge" style="${line.length>4?'font-size:12px;':''}">${escapeHtml(line)}</div>
           <div class="line-info">
-            <div class="line-name">Ligne ${escapeHtml(line)}</div>
+            <div class="line-name">Ligne ${escapeHtml(line)}${hasActiveAlert ? '<span class="line-alert-dot"></span>' : ''}</div>
             <div class="line-meta">
-              <span class="mono">${deltaTxt} en moy.</span>
-              <span>·</span>
-              <span>${stats.count} avis</span>
+              <span class="mono">${deltaTxt}</span>
+              ${stats.count ? `<span>·</span><span>${stats.count} avis</span>` : ''}
             </div>
           </div>
           <div class="trust-pill ${tone}">
-            <div class="trust-num">${flapHtml(stats.trust)}</div>
+            <div class="trust-num">${stats.count ? flapHtml(trustDisplay) : trustDisplay}</div>
             <div class="trust-label">${word}</div>
           </div>
         </div>`;
@@ -880,8 +985,8 @@
   function renderDetail(line){
     const stats = lineStats(line);
     if(!stats){ currentView = {name:'dashboard'}; render(); return; }
-    const tone = trustTone(stats.trust);
-    const word = trustWord(stats.trust);
+    const tone = stats.count ? trustTone(stats.trust) : 'tone-amber';
+    const word = stats.count ? trustWord(stats.trust) : 'PAS DE DONNÉES';
     const toneVar = tone.replace('tone-','');
 
     let html = `
@@ -891,17 +996,26 @@
       </button>
       <div class="detail-hero">
         <div class="line-badge" style="${line.length>4?'font-size:13px;':''}">${escapeHtml(line)}</div>
-        <div class="trust-num big-trust" style="color:var(--${toneVar})">${flapHtml(stats.trust)}</div>
+        <div class="trust-num big-trust" style="color:var(--${toneVar})">${stats.count ? flapHtml(stats.trust) : '—'}</div>
         <div class="trust-label" style="color:var(--${toneVar})">${word}</div>
         <div class="stat-grid">
-          <div class="stat-box"><div class="v">${stats.avgDelta>0?'+':''}${Math.round(stats.avgDelta)} min</div><div class="l">Ponctualité</div></div>
-          <div class="stat-box"><div class="v">${stats.avgDriving.toFixed(1)}★</div><div class="l">Conduite</div></div>
-          <div class="stat-box"><div class="v">${stats.avgExperience.toFixed(1)}★</div><div class="l">À bord</div></div>
+          <div class="stat-box"><div class="v">${stats.count ? (stats.avgDelta>0?'+':'')+Math.round(stats.avgDelta)+' min' : '—'}</div><div class="l">Ponctualité</div></div>
+          <div class="stat-box"><div class="v">${stats.count ? Math.round(stats.noShowRate*100)+'%' : '—'}</div><div class="l">Bus non passés</div></div>
+          <div class="stat-box"><div class="v">${stats.activeAlerts.length}</div><div class="l">Alertes actives</div></div>
         </div>
-        ${stats.noShowCount > 0 ? `<div class="banner" style="margin:14px 0 0;text-align:left;">⚠ ${stats.noShowCount} signalement${stats.noShowCount>1?'s':''} de bus non passé sur ${stats.count} (${Math.round(stats.noShowRate*100)}%)</div>` : ''}
       </div>
-      <div class="section-label">${stats.count} passage${stats.count>1?'s':''} signalé${stats.count>1?'s':''}</div>
     `;
+
+    if(stats.activeAlerts.length > 0){
+      html += `<div class="section-label">🚦 Alertes en cours</div>`;
+      stats.activeAlerts.forEach(a=>{ html += alertItemHtml(a, false); });
+    }
+
+    html += `<div class="section-label">${stats.count} passage${stats.count>1?'s':''} signalé${stats.count>1?'s':''}</div>`;
+
+    if(stats.count === 0){
+      html += `<div class="empty-state"><p>Aucun signalement de passage pour cette ligne pour l'instant.</p></div>`;
+    }
 
     stats.rows.forEach(r=>{
       if(r.noShow){
@@ -925,10 +1039,6 @@
             <span class="pass-time mono">${r.scheduled} → ${r.actual}${r.stop ? ' · '+escapeHtml(r.stop) : ''}</span>
             <span class="delta-badge ${dtone}">${deltaLabel(r.delta)}</span>
           </div>
-          <div class="pass-stars">
-            <span>Conduite <b>${starsHtml(r.driving)}</b></span>
-            <span>À bord <b>${starsHtml(r.experience)}</b></span>
-          </div>
           ${r.comment ? `<div class="pass-comment">"${escapeHtml(r.comment)}"</div>` : ''}
           <div class="pass-foot">
             ${r.bus ? `<span class="bus-chip">Bus ${escapeHtml(r.bus)}</span>` : ''}
@@ -949,9 +1059,9 @@
       <div class="section-label">À propos</div>
       <div class="settings-block">
         <h3>Comment ça marche</h3>
-        <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle). Chaque signalement compare l'heure prévue et l'heure réelle de passage, et note la conduite ainsi que l'expérience à bord. Les scores de fiabilité par ligne sont visibles par tous les voyageurs.</p>
+        <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle) : signalez la ponctualité d'un passage, ou une alerte trafic en cours (retard, déviation, bus supprimé…). Les alertes restent visibles ${ALERT_ACTIVE_HOURS}h après leur publication.</p>
         <p>La liste des lignes proposées couvre les Bulles B1 à B7 et quelques lignes principales. Si votre ligne n'y figure pas, utilisez « Ligne non listée » — elle sera ensuite proposée aux autres.</p>
-        <p>Les arrêts détaillés sont disponibles pour B1, B2, B6 et B7. Pour les autres lignes, seuls les terminus et les pôles d'échange principaux sont proposés : utilisez « Arrêt non listé » pour ajouter un arrêt manquant, il rejoindra ensuite la liste pour tout le monde.</p>
+        <p>Les arrêts détaillés sont disponibles pour B1, B2, B6 et B7. Pour les autres lignes, seuls les terminus et les pôles d'échange principaux sont proposés : utilisez « Arrêt non listé » pour ajouter un arrêt manquant.</p>
         ${connectionError ? `<p style="color:var(--amber);">Connexion au serveur impossible pour le moment — vérifiez votre connexion internet.</p>` : ''}
       </div>
       <div class="section-label">Préférences locales</div>
@@ -962,8 +1072,8 @@
       </div>
     `;
     const btn = document.getElementById('clearLocalBtn');
-    if(btn) btn.addEventListener('click', async ()=>{
-      await clearLocalData();
+    if(btn) btn.addEventListener('click', ()=>{
+      clearLocalData();
       renderSettings();
       showToast('Préférences réinitialisées');
     });
@@ -979,6 +1089,48 @@
       window.scrollTo(0,0);
     });
   });
+
+  // ---------------- SHEET MODE TABS ----------------
+  const tabPassage = document.getElementById('tabPassage');
+  const tabAlert = document.getElementById('tabAlert');
+  const passageHeader = document.getElementById('passageHeader');
+  const alertHeader = document.getElementById('alertHeader');
+  const passageFields = document.getElementById('passageFields');
+  const alertFields = document.getElementById('alertFields');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function setSheetMode(mode){
+    sheetMode = mode;
+    const isAlert = mode === 'alert';
+    tabPassage.classList.toggle('active', !isAlert);
+    tabAlert.classList.toggle('active', isAlert);
+    passageHeader.style.display = isAlert ? 'none' : '';
+    alertHeader.style.display = isAlert ? '' : 'none';
+    passageFields.style.display = isAlert ? 'none' : '';
+    alertFields.style.display = isAlert ? '' : 'none';
+    submitBtn.textContent = isAlert ? "Publier l'alerte" : 'Publier le signalement';
+    document.getElementById('lineField').classList.remove('has-error');
+    document.getElementById('lineError').classList.remove('show');
+  }
+  tabPassage.addEventListener('click', ()=> setSheetMode('passage'));
+  tabAlert.addEventListener('click', ()=> setSheetMode('alert'));
+
+  // ---------------- ALERT TYPE CHIPS ----------------
+  const typeChips = document.getElementById('typeChips');
+  function renderTypeChips(){
+    typeChips.innerHTML = ALERT_TYPES.map(t=>
+      `<button type="button" class="chip${t.code===selectedAlertType?' on':''}" data-type="${t.code}">${t.icon} ${escapeHtml(t.label)}</button>`
+    ).join('');
+    typeChips.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        selectedAlertType = chip.getAttribute('data-type');
+        renderTypeChips();
+        document.getElementById('typeField').classList.remove('has-error');
+        document.getElementById('typeError').classList.remove('show');
+      });
+    });
+  }
+  renderTypeChips();
 
   // ---------------- PICKERS (ligne / arrêt) ----------------
   const lineBtn = document.getElementById('lineBtn');
@@ -1039,7 +1191,6 @@
     closeAllPanels();
     lineCustomRow.classList.remove('show');
     lineCustomInput.value = '';
-    // reset stop when line changes
     selectedStop = '';
     stopBtnLabel.textContent = 'Choisir un arrêt (optionnel)…';
     stopBtnLabel.classList.add('ph');
@@ -1128,7 +1279,6 @@
     chooseStop(v);
   }
 
-  // close panels if tapping outside them within the sheet
   document.getElementById('ratingForm').addEventListener('click', (e)=>{
     if(!e.target.closest('#lineField') && !linePanel.classList.contains('hidden')) closeAllPanels();
     if(!e.target.closest('#stopField') && !stopPanel.classList.contains('hidden')) closeAllPanels();
@@ -1138,42 +1288,34 @@
   const form = document.getElementById('ratingForm');
   const openSheetBtn = document.getElementById('openSheetBtn');
   const cancelBtn = document.getElementById('cancelBtn');
-  const submitBtn = document.getElementById('submitBtn');
 
   function resetForm(){
     form.reset();
-    starValues = { driving:0, experience:0 };
-    document.querySelectorAll('.star-input button').forEach(b=>b.classList.remove('on'));
     document.getElementById('deltaPreviewWrap').style.display = 'none';
-    selectedLine = ''; selectedStop = '';
+    selectedLine = ''; selectedStop = ''; selectedAlertType = '';
+    renderTypeChips();
     lineBtnLabel.textContent = 'Choisir une ligne…'; lineBtnLabel.classList.add('ph');
     stopBtnLabel.textContent = `Choisissez d'abord une ligne`; stopBtnLabel.classList.add('ph');
     stopBtn.disabled = true;
     closeAllPanels();
     lineCustomRow.classList.remove('show'); stopCustomRow.classList.remove('show');
-    ['lineField','stopField','scheduledField','actualField','drivingField','experienceField'].forEach(id=>{
+    ['lineField','stopField','scheduledField','actualField','typeField'].forEach(id=>{
       document.getElementById(id).classList.remove('has-error');
     });
     document.querySelectorAll('.field-error').forEach(el=>el.classList.remove('show'));
     document.getElementById('f-noshow').checked = false;
     applyNoShowMode(false);
+    setSheetMode('passage');
   }
 
-  // ---------------- MODE "BUS NON PASSÉ" ----------------
   function applyNoShowMode(isNoShow){
     document.getElementById('actualField').style.display = isNoShow ? 'none' : '';
     document.getElementById('timeRow').classList.toggle('single', isNoShow);
     document.getElementById('busField').style.display = isNoShow ? 'none' : '';
-    document.getElementById('drivingField').style.display = isNoShow ? 'none' : '';
-    document.getElementById('experienceField').style.display = isNoShow ? 'none' : '';
     if(isNoShow){
       document.getElementById('deltaPreviewWrap').style.display = 'none';
       document.getElementById('actualField').classList.remove('has-error');
       document.getElementById('actualError').classList.remove('show');
-      document.getElementById('drivingField').classList.remove('has-error');
-      document.getElementById('drivingError').classList.remove('show');
-      document.getElementById('experienceField').classList.remove('has-error');
-      document.getElementById('experienceError').classList.remove('show');
     }
   }
   document.getElementById('f-noshow').addEventListener('change', (e)=>{
@@ -1191,21 +1333,6 @@
   openSheetBtn.addEventListener('click', openSheet);
   cancelBtn.addEventListener('click', closeSheet);
   sheetOverlay.addEventListener('click', (e)=>{ if(e.target === sheetOverlay) closeSheet(); });
-
-  document.querySelectorAll('.star-input').forEach(group=>{
-    const target = group.getAttribute('data-target');
-    group.querySelectorAll('button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const v = parseInt(btn.getAttribute('data-v'),10);
-        starValues[target] = v;
-        group.querySelectorAll('button').forEach(b=>{
-          b.classList.toggle('on', parseInt(b.getAttribute('data-v'),10) <= v);
-        });
-        document.getElementById(target+'Field').classList.remove('has-error');
-        document.getElementById(target+'Error').classList.remove('show');
-      });
-    });
-  });
 
   function toMinutes(hhmm){
     if(!hhmm) return null;
@@ -1242,31 +1369,53 @@
 
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+    const p = document.getElementById('f-pseudo').value.trim();
 
+    if(sheetMode === 'alert'){
+      let hasError = false; let firstErrorField = null;
+      if(!selectedLine){ markError('lineField','lineError'); hasError = true; firstErrorField = 'lineField'; }
+      if(!selectedAlertType){ markError('typeField','typeError'); hasError = true; firstErrorField = firstErrorField || 'typeField'; }
+      if(hasError){
+        showToast('Merci de compléter les champs en rouge', true);
+        document.getElementById(firstErrorField).scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+      }
+      const message = document.getElementById('f-alert-message').value.trim();
+      const alert = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
+        line: selectedLine, type: selectedAlertType, message, pseudo: p,
+        createdAt: Date.now()
+      };
+      allAlerts.unshift(alert);
+      const savedLine = selectedLine;
+      closeSheet();
+      currentView = { name:'detail', line: savedLine };
+      render();
+      showToast('Alerte publiée — merci de prévenir les autres !');
+      persistAlertInBackground(alert);
+      if(p) savePseudo(p);
+      rememberLine(savedLine);
+      return;
+    }
+
+    // sheetMode === 'passage'
     const isNoShow = document.getElementById('f-noshow').checked;
     const scheduled = document.getElementById('f-scheduled').value;
     const actual = document.getElementById('f-actual').value;
     let firstErrorField = null;
-
     let hasError = false;
     if(!selectedLine){ markError('lineField','lineError'); hasError = true; firstErrorField = firstErrorField || 'lineField'; }
     if(!scheduled){ markError('scheduledField','scheduledError'); hasError = true; firstErrorField = firstErrorField || 'scheduledField'; }
-    if(!isNoShow){
-      if(!actual){ markError('actualField','actualError'); hasError = true; firstErrorField = firstErrorField || 'actualField'; }
-      if(starValues.driving === 0){ markError('drivingField','drivingError'); hasError = true; firstErrorField = firstErrorField || 'drivingField'; }
-      if(starValues.experience === 0){ markError('experienceField','experienceError'); hasError = true; firstErrorField = firstErrorField || 'experienceField'; }
-    }
+    if(!isNoShow && !actual){ markError('actualField','actualError'); hasError = true; firstErrorField = firstErrorField || 'actualField'; }
 
     if(hasError){
       showToast('Merci de compléter les champs en rouge', true);
-      const el = document.getElementById(firstErrorField);
-      if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+      document.getElementById(firstErrorField).scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
 
     const bus = isNoShow ? '' : document.getElementById('f-bus').value.trim();
     const comment = document.getElementById('f-comment').value.trim();
-    const p = document.getElementById('f-pseudo').value.trim();
     const delta = isNoShow ? null : (toMinutes(actual) - toMinutes(scheduled));
 
     const entry = {
@@ -1274,13 +1423,10 @@
       line: selectedLine, stop: selectedStop, scheduled,
       actual: isNoShow ? null : actual,
       delta, bus,
-      driving: isNoShow ? null : starValues.driving,
-      experience: isNoShow ? null : starValues.experience,
       comment, pseudo: p, noShow: isNoShow,
       createdAt: Date.now()
     };
 
-    // Ajout optimiste : l'entrée apparaît immédiatement, sans attendre le réseau.
     allRatings.unshift(entry);
     const savedLine = selectedLine;
     closeSheet();
@@ -1288,7 +1434,6 @@
     render();
     showToast(isNoShow ? 'Signalement publié — merci de nous avoir prévenus !' : 'Signalement publié — merci !');
 
-    // Persistance et préférences en arrière-plan (n'empêche jamais l'affichage ci-dessus).
     persistRatingInBackground(entry);
     if(p) savePseudo(p);
     rememberLine(savedLine);
@@ -1301,6 +1446,8 @@
     await loadRatings();
     render();
     subscribeToLiveUpdates();
+    // rafraîchit l'affichage régulièrement pour faire disparaître les alertes expirées
+    setInterval(render, 5*60*1000);
   }
   init();
 
