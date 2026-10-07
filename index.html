@@ -577,9 +577,19 @@
           <div class="chip-group" id="typeChips"></div>
           <div class="field-error" id="typeError">Merci de choisir un type d'alerte.</div>
         </div>
+        <div class="row2">
+          <div class="field">
+            <label>Depuis (optionnel)</label>
+            <input type="time" id="f-alert-start">
+          </div>
+          <div class="field">
+            <label>Jusqu'à (optionnel)</label>
+            <input type="time" id="f-alert-end">
+          </div>
+        </div>
         <div class="field">
           <label>Détails (optionnel)</label>
-          <textarea id="f-alert-message" placeholder="Ex. durée estimée, raison, itinéraire de déviation…"></textarea>
+          <textarea id="f-alert-message" placeholder="Ex. raison, itinéraire de déviation…"></textarea>
         </div>
       </div>
 
@@ -601,7 +611,7 @@
   const LINE_DEFS = [
     { code:'B1',  desc:'Liévin Université ↔ Noyelles-Godault Europe' },
     { code:'B2',  desc:'Beuvry Ballon ↔ Houdain Marne / Barlin Collège Moulin' },
-    { code:'B3',  desc:'Avion Lebas ↔ Vendin-le-Vieil Centre Cial.' },
+    { code:'B3',  desc:'Avion Lebas ↔ Vendin-le-Vieil Lens 2' },
     { code:'B4',  desc:'Annezin Stade ↔ Beuvry Hôpital' },
     { code:'B5',  desc:'Libercourt Gare ↔ Lens Gares' },
     { code:'B6',  desc:'Auchel Anatole-France ↔ Bruay Europe' },
@@ -618,9 +628,16 @@
              'Lycées (Béthune)','André Malraux','Horlogerie','Gare - Quai 5 (Béthune)','La Rotonde','Mont-Liébaut',
              'Actipolis','Porte Nord Ccial','Europe - Quai 2 (Bruay-la-Buissière)','Bodelot',
              'Marne (Houdain)','Somme (Houdain)','Collège Moulin - Quai 1/2 (Barlin)','Grand Place (Barlin)'],
-    'B3':   ['Lebas (Avion)','Vendin-le-Vieil - Centre Cial.'],
-    'B4':   ['Stade (Annezin)','Hôpital (Beuvry)'],
-    'B5':   ['Gare (Libercourt)'],
+    'B3':   ['Lebas (Avion)','Lycée Picasso','Hôtel de Ville (Lens)','Bourel','Voltaire','Centre Montgré',
+             'Pont de Douai','Centre-Ville (Lens)','Gares - Quai 1 (Lens)','Faculté Jean Perrin','Hôpital (Lens)',
+             'Béhal-Jean Zay - Quai 2','Centre Dumas','Stade Debeyre','Parc des Cytises','Vendin-le-Vieil Lens 2'],
+    'B4':   ['Stade (Annezin)','Égalité (Annezin)','Mairie (Annezin)','Coussette (Annezin)','Clemenceau - Quai 1/2 (Béthune)',
+             'La Rotonde (Béthune)','Gare - Quai 3/6 (Béthune)','Popieluszko (Béthune)','Cité Cheminots - Quai 1/2 (Béthune)',
+             'Hôtel des Postes (Béthune)','Hôpital - Quai 3/4 (Beuvry)'],
+    'B5':   ['Gares - Quai 11 (Lens)','Cantin Salengro (Lens)','Gare (Loison-sous-Lens)','Mairie (Loison-sous-Lens)',
+             'Grand Moulin (Harnes)','Rue Léon Duhamel (Harnes)','Valmy (Harnes)','Route de Lille (Harnes)',
+             'Saint-Paul (Harnes)','Saint-Druon (Carvin)','Carembault (Carvin)','Mairie (Carvin)','Square Quinet (Carvin)',
+             'Plantigeons (Carvin)','Faisanderie (Carvin)','Gare - Quai 3/4 (Libercourt)'],
     'B6':   ['Anatole-France (Auchel)','Mairie (Auchel)','Lycée Lavoisier','Évrard','Chateaubriand','Belfort',
              'Mairie (Calonne-Ricouart)','Joliot-Curie (Calonne-Ricouart)','Église (Burbure)','Europe (Bruay)'],
     'B7':   ['Espace Lumière (Hénin-Beaumont)','Gare (Hénin-Beaumont)','Albert Schweitzer','Rimbaud',
@@ -628,9 +645,6 @@
     '10':   ['Oblinghem Mairie','Beuvry Gorre','Beuvry Gare'],
     '11':   ['Grenay Guadeloupe','Noyelles-les-Vermelles Centre Commercial'],
   };
-  const HUB_STOPS = ['Lens Gares','Béthune Gare','Liévin Université','Noyelles-Godault Europe',
-    'Hénin-Beaumont Espace Lumière','Libercourt Gare','Bruay Europe','Auchel Anatole-France'];
-
   const ALERT_TYPES = [
     { code:'retard',   label:'Retard important', icon:'⏱️' },
     { code:'supprime', label:'Bus supprimé',      icon:'🚫' },
@@ -670,12 +684,17 @@
   function rowToAlert(row){
     return {
       id: row.id, line: row.line, type: row.type, message: row.message || '',
+      startTime: row.start_time || '', endTime: row.end_time || '',
       pseudo: row.pseudo || '',
       createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
     };
   }
   function alertToRow(a){
-    return { id: a.id, line: a.line, type: a.type, message: a.message || null, pseudo: a.pseudo || null };
+    return {
+      id: a.id, line: a.line, type: a.type, message: a.message || null,
+      start_time: a.startTime || null, end_time: a.endTime || null,
+      pseudo: a.pseudo || null
+    };
   }
 
   function withTimeout(promise, ms){
@@ -873,8 +892,15 @@
     document.body.appendChild(t);
     setTimeout(()=> t.remove(), 2900);
   }
+  function alertPeriodLabel(a){
+    if(a.startTime && a.endTime) return `⏰ ${a.startTime} → ${a.endTime}`;
+    if(a.startTime) return `⏰ à partir de ${a.startTime}`;
+    if(a.endTime) return `⏰ jusqu'à ${a.endTime}`;
+    return '';
+  }
   function alertItemHtml(a, showLine){
     const info = alertTypeInfo(a.type);
+    const period = alertPeriodLabel(a);
     return `
       <div class="alert-item">
         <div class="alert-top">
@@ -883,6 +909,7 @@
           <span class="alert-type">${escapeHtml(info.label)}</span>
           <span class="alert-time">${timeAgo(a.createdAt)}</span>
         </div>
+        ${period ? `<div class="alert-message mono" style="opacity:.8;">${period}</div>` : ''}
         ${a.message ? `<div class="alert-message">${escapeHtml(a.message)}</div>` : ''}
         <div class="alert-foot">${escapeHtml(a.pseudo || 'Anonyme')}</div>
       </div>`;
@@ -1061,7 +1088,7 @@
         <h3>Comment ça marche</h3>
         <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle) : signalez la ponctualité d'un passage, ou une alerte trafic en cours (retard, déviation, bus supprimé…). Les alertes restent visibles ${ALERT_ACTIVE_HOURS}h après leur publication.</p>
         <p>La liste des lignes proposées couvre les Bulles B1 à B7 et quelques lignes principales. Si votre ligne n'y figure pas, utilisez « Ligne non listée » — elle sera ensuite proposée aux autres.</p>
-        <p>Les arrêts détaillés sont disponibles pour B1, B2, B6 et B7. Pour les autres lignes, seuls les terminus et les pôles d'échange principaux sont proposés : utilisez « Arrêt non listé » pour ajouter un arrêt manquant.</p>
+        <p>Les arrêts proposés sont ceux confirmés sur le tracé réel de chaque ligne, détaillés pour les 7 Bulles (B1 à B7). Pour les lignes 10 et 11 et toute autre ligne non listée, seuls les terminus sont proposés pour l'instant : utilisez « Arrêt non listé » pour ajouter un arrêt manquant, il rejoindra ensuite la liste pour tout le monde.</p>
         ${connectionError ? `<p style="color:var(--amber);">Connexion au serveur impossible pour le moment — vérifiez votre connexion internet.</p>` : ''}
       </div>
       <div class="section-label">Préférences locales</div>
@@ -1222,7 +1249,7 @@
     const f = (filter||'').toLowerCase().trim();
     const predefined = STOPS_BY_LINE[selectedLine.toUpperCase()] || [];
     const community = communityStopsForLine(selectedLine);
-    const combined = Array.from(new Set([...predefined, ...community, ...HUB_STOPS]));
+    const combined = Array.from(new Set([...predefined, ...community]));
     const items = combined.filter(s => !f || s.toLowerCase().includes(f));
     let html = `<div class="picker-option muted-opt" id="stopNoneOpt">Sans arrêt précis</div>`;
     if(items.length === 0){
@@ -1381,9 +1408,11 @@
         return;
       }
       const message = document.getElementById('f-alert-message').value.trim();
+      const startTime = document.getElementById('f-alert-start').value;
+      const endTime = document.getElementById('f-alert-end').value;
       const alert = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
-        line: selectedLine, type: selectedAlertType, message, pseudo: p,
+        line: selectedLine, type: selectedAlertType, message, startTime, endTime, pseudo: p,
         createdAt: Date.now()
       };
       allAlerts.unshift(alert);
