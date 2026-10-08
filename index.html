@@ -672,6 +672,93 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let connectionError = false;
 
+  // ---------------- NOTIFICATIONS PUSH ----------------
+  const VAPID_PUBLIC_KEY = 'BNz3PFXIR04wDGgaEWbpYV47VNz6WNTvFl1Sy6o9G8L7xfIBoCcvNLmDZwIYFtdmrePjiIcICY3fo2YryGW36OM';
+  const pushSupported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+  let pushSub = null; // PushSubscription navigateur, ou null
+  let notifLineFilter = null; // null = toutes les lignes, sinon tableau de codes
+
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  async function initPushState(){
+    if(!pushSupported) return;
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      pushSub = await reg.pushManager.getSubscription();
+      const saved = localPrefs.get('notif-line-filter');
+      notifLineFilter = saved ? JSON.parse(saved) : null;
+    }catch(e){ console.warn('Fiabus: état des notifications indisponible', e); }
+  }
+
+  async function upsertSubscription(sub, lineFilter){
+    const json = sub.toJSON();
+    try{
+      await sb.from('push_subscriptions').upsert({
+        endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth,
+        line_filter: lineFilter
+      }, { onConflict: 'endpoint' });
+    }catch(e){ console.warn('Fiabus: enregistrement abonnement impossible', e); }
+  }
+
+  async function enableNotifications(lineFilter){
+    if(!pushSupported){ showToast("Notifications non supportées sur cet appareil", true); return; }
+    try{
+      const perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ showToast('Notifications refusées', true); return; }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if(!sub){
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+      await upsertSubscription(sub, lineFilter);
+      pushSub = sub;
+      notifLineFilter = lineFilter;
+      localPrefs.set('notif-line-filter', JSON.stringify(lineFilter));
+      showToast('Notifications activées');
+      renderSettings();
+    }catch(e){
+      console.warn('Fiabus: activation notifications échouée', e);
+      showToast("Impossible d'activer les notifications", true);
+    }
+  }
+
+  async function updateNotificationLines(lineFilter){
+    if(!pushSub) return;
+    await upsertSubscription(pushSub, lineFilter);
+    notifLineFilter = lineFilter;
+    localPrefs.set('notif-line-filter', JSON.stringify(lineFilter));
+    showToast('Préférences de notification enregistrées');
+    renderSettings();
+  }
+
+  async function disableNotifications(){
+    try{
+      if(pushSub){
+        const endpoint = pushSub.toJSON().endpoint;
+        await pushSub.unsubscribe();
+        try{ await sb.from('push_subscriptions').delete().eq('endpoint', endpoint); }catch(e){}
+      }
+      pushSub = null;
+      notifLineFilter = null;
+      localPrefs.remove('notif-line-filter');
+      showToast('Notifications désactivées');
+      renderSettings();
+    }catch(e){
+      console.warn('Fiabus: désactivation notifications échouée', e);
+      showToast('Erreur lors de la désactivation', true);
+    }
+  }
+
   function rowToEntry(row){
     return {
       id: row.id, line: row.line, stop: row.stop || '', scheduled: row.scheduled, actual: row.actual,
@@ -1106,8 +1193,43 @@
     });
   }
 
+  let notifPickerOpen = false;
+  let notifPickerSelection = null; // null = toutes les lignes, sinon tableau de codes
+
   function renderSettings(){
+    let notifBlock = '';
+    if(!pushSupported){
+      notifBlock = `<p>Les notifications ne sont pas supportées par ce navigateur. Sur iPhone, l'app doit être ajoutée à l'écran d'accueil (Partager → Sur l'écran d'accueil) pour que ça fonctionne.</p>`;
+    }else if(!pushSub){
+      notifBlock = `
+        <p>Recevez une notification sur votre téléphone, même app fermée, à chaque nouveau signalement ou alerte trafic.</p>
+        <button class="ghost-btn" id="enableNotifBtn">🔔 Activer les notifications</button>`;
+    }else{
+      const filterLabel = notifLineFilter && notifLineFilter.length
+        ? `${notifLineFilter.length} ligne${notifLineFilter.length>1?'s':''} suivie${notifLineFilter.length>1?'s':''} (${notifLineFilter.join(', ')})`
+        : 'toutes les lignes';
+      notifBlock = `<p>✅ Notifications activées — ${filterLabel}</p>`;
+      if(notifPickerOpen){
+        const known = LINE_DEFS.map(l=>l.code);
+        const extra = communityLineCodes();
+        const allCodes = Array.from(new Set([...known, ...extra]));
+        notifBlock += `<div class="chip-group" id="notifLinesChips" style="margin-top:10px;">
+          <button type="button" class="chip${notifPickerSelection===null?' on':''}" data-line="__ALL__">Toutes les lignes</button>
+          ${allCodes.map(c=>`<button type="button" class="chip${notifPickerSelection && notifPickerSelection.includes(c)?' on':''}" data-line="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}
+        </div>
+        <button class="ghost-btn" id="notifSaveBtn" style="margin-top:12px;">Enregistrer</button>`;
+      }else{
+        notifBlock += `<button class="ghost-btn" id="notifChangeBtn" style="margin-top:4px;">Changer les lignes suivies</button>`;
+      }
+      notifBlock += `<button class="ghost-btn danger-btn" id="disableNotifBtn" style="margin-top:10px;">🔕 Désactiver les notifications</button>`;
+    }
+
     view.innerHTML = `
+      <div class="section-label">Notifications</div>
+      <div class="settings-block">
+        <h3>Alertes en direct</h3>
+        ${notifBlock}
+      </div>
       <div class="section-label">À propos</div>
       <div class="settings-block">
         <h3>Comment ça marche</h3>
@@ -1123,11 +1245,53 @@
         <button class="ghost-btn danger-btn" id="clearLocalBtn">Réinitialiser mes préférences</button>
       </div>
     `;
-    const btn = document.getElementById('clearLocalBtn');
-    if(btn) btn.addEventListener('click', ()=>{
+
+    const clearBtn = document.getElementById('clearLocalBtn');
+    if(clearBtn) clearBtn.addEventListener('click', ()=>{
       clearLocalData();
       renderSettings();
       showToast('Préférences réinitialisées');
+    });
+
+    const enableBtn = document.getElementById('enableNotifBtn');
+    if(enableBtn) enableBtn.addEventListener('click', ()=> enableNotifications(null));
+
+    const disableBtn = document.getElementById('disableNotifBtn');
+    if(disableBtn) disableBtn.addEventListener('click', ()=>{
+      notifPickerOpen = false;
+      disableNotifications();
+    });
+
+    const changeBtn = document.getElementById('notifChangeBtn');
+    if(changeBtn) changeBtn.addEventListener('click', ()=>{
+      notifPickerSelection = notifLineFilter ? [...notifLineFilter] : null;
+      notifPickerOpen = true;
+      renderSettings();
+    });
+
+    const chipsWrap = document.getElementById('notifLinesChips');
+    if(chipsWrap){
+      chipsWrap.querySelectorAll('.chip').forEach(chip=>{
+        chip.addEventListener('click', ()=>{
+          const code = chip.getAttribute('data-line');
+          if(code === '__ALL__'){
+            notifPickerSelection = null;
+          }else{
+            if(notifPickerSelection === null) notifPickerSelection = [];
+            const idx = notifPickerSelection.indexOf(code);
+            if(idx >= 0) notifPickerSelection.splice(idx,1);
+            else notifPickerSelection.push(code);
+            if(notifPickerSelection.length === 0) notifPickerSelection = null;
+          }
+          renderSettings();
+        });
+      });
+    }
+
+    const saveBtn = document.getElementById('notifSaveBtn');
+    if(saveBtn) saveBtn.addEventListener('click', ()=>{
+      notifPickerOpen = false;
+      updateNotificationLines(notifPickerSelection);
     });
   }
 
@@ -1502,8 +1666,8 @@
     await loadRatings();
     render();
     subscribeToLiveUpdates();
-    // rafraîchit l'affichage régulièrement pour faire disparaître les alertes expirées
-    setInterval(render, 5*60*1000);
+    await initPushState();
+    if(currentView.name === 'settings') renderSettings();
   }
   init();
 
