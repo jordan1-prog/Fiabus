@@ -655,7 +655,6 @@
     { code:'greve',    label:'Grève',             icon:'✊' },
     { code:'autre',    label:'Autre',             icon:'ℹ️' },
   ];
-  const ALERT_ACTIVE_HOURS = 4; // une alerte reste visible 4h après sa publication
 
   // ---------------- SUPABASE (base de données partagée) ----------------
   const SUPABASE_URL = 'https://aobvgrmnnojgocpmdcne.supabase.co';
@@ -820,13 +819,11 @@
   }
 
   function activeAlertsForLine(line){
-    const cutoff = Date.now() - ALERT_ACTIVE_HOURS*3600*1000;
-    return allAlerts.filter(a => a.line.toLowerCase() === line.toLowerCase() && a.createdAt >= cutoff)
+    return allAlerts.filter(a => a.line.toLowerCase() === line.toLowerCase())
                      .sort((a,b)=> b.createdAt - a.createdAt);
   }
   function allActiveAlerts(){
-    const cutoff = Date.now() - ALERT_ACTIVE_HOURS*3600*1000;
-    return allAlerts.filter(a => a.createdAt >= cutoff).sort((a,b)=> b.createdAt - a.createdAt);
+    return allAlerts.slice().sort((a,b)=> b.createdAt - a.createdAt);
   }
   function alertTypeInfo(code){
     return ALERT_TYPES.find(t=>t.code===code) || { code, label: code, icon:'ℹ️' };
@@ -1086,7 +1083,7 @@
       <div class="section-label">À propos</div>
       <div class="settings-block">
         <h3>Comment ça marche</h3>
-        <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle) : signalez la ponctualité d'un passage, ou une alerte trafic en cours (retard, déviation, bus supprimé…). Les alertes restent visibles ${ALERT_ACTIVE_HOURS}h après leur publication.</p>
+        <p>Fiabus est un carnet de bord communautaire pour le réseau Tadao (Artois-Gohelle) : signalez la ponctualité d'un passage, ou une alerte trafic en cours (retard, déviation, bus supprimé…). Les alertes restent visibles tant qu'elles ne sont pas remplacées par une plus récente dans l'affichage.</p>
         <p>La liste des lignes proposées couvre les Bulles B1 à B7 et quelques lignes principales. Si votre ligne n'y figure pas, utilisez « Ligne non listée » — elle sera ensuite proposée aux autres.</p>
         <p>Les arrêts proposés sont ceux confirmés sur le tracé réel de chaque ligne, détaillés pour les 7 Bulles (B1 à B7). Pour les lignes 10 et 11 et toute autre ligne non listée, seuls les terminus sont proposés pour l'instant : utilisez « Arrêt non listé » pour ajouter un arrêt manquant, il rejoindra ensuite la liste pour tout le monde.</p>
         ${connectionError ? `<p style="color:var(--amber);">Connexion au serveur impossible pour le moment — vérifiez votre connexion internet.</p>` : ''}
