@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fiabus-v3';
+const CACHE_NAME = 'fiabus-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -23,12 +23,14 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Réseau d'abord, en ignorant explicitement le cache HTTP du navigateur (pas seulement
+// le cache du service worker) pour que chaque mise à jour soit vue immédiatement.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request).then((response) => {
+    fetch(event.request, { cache: 'no-store' }).then((response) => {
       if (response.ok) {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
