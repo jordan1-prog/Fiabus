@@ -579,11 +579,21 @@
         </div>
         <div class="row2">
           <div class="field">
-            <label>Depuis (optionnel)</label>
+            <label>Date de début (optionnel)</label>
+            <input type="date" id="f-alert-start-date">
+          </div>
+          <div class="field">
+            <label>Date de fin (optionnel)</label>
+            <input type="date" id="f-alert-end-date">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Heure de début (optionnel)</label>
             <input type="time" id="f-alert-start">
           </div>
           <div class="field">
-            <label>Jusqu'à (optionnel)</label>
+            <label>Heure de fin (optionnel)</label>
             <input type="time" id="f-alert-end">
           </div>
         </div>
@@ -683,6 +693,7 @@
   function rowToAlert(row){
     return {
       id: row.id, line: row.line, type: row.type, message: row.message || '',
+      startDate: row.start_date || '', endDate: row.end_date || '',
       startTime: row.start_time || '', endTime: row.end_time || '',
       pseudo: row.pseudo || '',
       createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
@@ -691,6 +702,7 @@
   function alertToRow(a){
     return {
       id: a.id, line: a.line, type: a.type, message: a.message || null,
+      start_date: a.startDate || null, end_date: a.endDate || null,
       start_time: a.startTime || null, end_time: a.endTime || null,
       pseudo: a.pseudo || null
     };
@@ -889,11 +901,27 @@
     document.body.appendChild(t);
     setTimeout(()=> t.remove(), 2900);
   }
+  function formatDateFR(iso){
+    if(!iso) return '';
+    const parts = iso.split('-'); // YYYY-MM-DD
+    if(parts.length !== 3) return iso;
+    return `${parts[2]}/${parts[1]}`;
+  }
   function alertPeriodLabel(a){
-    if(a.startTime && a.endTime) return `⏰ ${a.startTime} → ${a.endTime}`;
-    if(a.startTime) return `⏰ à partir de ${a.startTime}`;
-    if(a.endTime) return `⏰ jusqu'à ${a.endTime}`;
-    return '';
+    const lines = [];
+    if(a.startDate && a.endDate && a.startDate !== a.endDate){
+      lines.push(`📅 ${formatDateFR(a.startDate)} → ${formatDateFR(a.endDate)}`);
+    }else if(a.startDate && a.endDate){
+      lines.push(`📅 ${formatDateFR(a.startDate)}`);
+    }else if(a.startDate){
+      lines.push(`📅 à partir du ${formatDateFR(a.startDate)}`);
+    }else if(a.endDate){
+      lines.push(`📅 jusqu'au ${formatDateFR(a.endDate)}`);
+    }
+    if(a.startTime && a.endTime) lines.push(`⏰ ${a.startTime} → ${a.endTime}`);
+    else if(a.startTime) lines.push(`⏰ à partir de ${a.startTime}`);
+    else if(a.endTime) lines.push(`⏰ jusqu'à ${a.endTime}`);
+    return lines.join('  ·  ');
   }
   function alertItemHtml(a, showLine){
     const info = alertTypeInfo(a.type);
@@ -1405,11 +1433,13 @@
         return;
       }
       const message = document.getElementById('f-alert-message').value.trim();
+      const startDate = document.getElementById('f-alert-start-date').value;
+      const endDate = document.getElementById('f-alert-end-date').value;
       const startTime = document.getElementById('f-alert-start').value;
       const endTime = document.getElementById('f-alert-end').value;
       const alert = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
-        line: selectedLine, type: selectedAlertType, message, startTime, endTime, pseudo: p,
+        line: selectedLine, type: selectedAlertType, message, startDate, endDate, startTime, endTime, pseudo: p,
         createdAt: Date.now()
       };
       allAlerts.unshift(alert);
