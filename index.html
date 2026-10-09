@@ -464,6 +464,24 @@
   .field-error.show{ display:block; }
   .has-error .picker-btn{ border-color:var(--red); }
   .has-error .chip-group{ outline:1px solid var(--red); border-radius:10px; padding:4px; }
+  .field select{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:11px 12px; color:var(--text); font-family:'Space Grotesk',sans-serif; font-size:14px; outline:none;
+  }
+  .del-btn{
+    background:none; border:1px solid var(--red); color:var(--red); border-radius:8px;
+    padding:4px 10px; font-size:11.5px; cursor:pointer; margin-top:8px;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .role-badge{
+    display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px;
+    background:var(--teal-soft); color:var(--teal); font-weight:600; margin-left:4px;
+  }
+  .staff-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;
+  }
+  .staff-row .ghost-btn{ padding:5px 10px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -802,6 +820,97 @@
     ]);
   }
 
+  // ---------------- COMPTES ÉQUIPE (administrateur / staff) ----------------
+  let currentUser = null;
+  let currentRole = null; // 'admin' | 'staff' | null
+  let staffList = [];
+  function canModerate(){ return currentRole === 'admin' || currentRole === 'staff'; }
+
+  async function loadStaffList(){
+    try{
+      const { data, error } = await sb.from('staff_roles').select('*').order('created_at', { ascending:true });
+      if(error) throw error;
+      staffList = data || [];
+    }catch(e){ staffList = []; }
+  }
+  async function loadRole(){
+    if(!currentUser){ currentRole = null; staffList = []; return; }
+    try{
+      const { data, error } = await sb.from('staff_roles').select('role').eq('user_id', currentUser.id).maybeSingle();
+      if(error) throw error;
+      currentRole = data ? data.role : null;
+    }catch(e){ currentRole = null; }
+    if(currentRole === 'admin') await loadStaffList(); else staffList = [];
+  }
+  async function initAuth(){
+    try{
+      const { data } = await sb.auth.getSession();
+      currentUser = data && data.session ? data.session.user : null;
+      await loadRole();
+      sb.auth.onAuthStateChange((_event, session)=>{
+        setTimeout(async ()=>{
+          const newUser = session ? session.user : null;
+          if((newUser ? newUser.id : null) === (currentUser ? currentUser.id : null)) return;
+          currentUser = newUser;
+          await loadRole();
+          render();
+        }, 0);
+      });
+    }catch(e){ console.warn('Fiabus: authentification indisponible', e); }
+  }
+  async function signIn(email, password){
+    if(!email || !password){ showToast('Email et mot de passe requis', true); return; }
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      showToast(/invalid/i.test(error.message) ? 'Email ou mot de passe incorrect' : 'Connexion impossible : ' + error.message, true);
+      return;
+    }
+    currentUser = data.user;
+    await loadRole();
+    showToast(currentRole ? 'Connecté' : "Connecté, mais aucun rôle n'est attribué à ce compte");
+    renderSettings();
+  }
+  async function signOut(){
+    await sb.auth.signOut();
+    currentUser = null; currentRole = null; staffList = [];
+    renderSettings();
+    showToast('Déconnecté');
+  }
+  async function addStaff(email, role){
+    if(!email){ showToast('Email requis', true); return; }
+    const { error } = await sb.rpc('add_staff', { p_email: email, p_role: role });
+    if(error){ showToast(error.message, true); return; }
+    await loadStaffList();
+    showToast('Membre ajouté');
+    renderSettings();
+  }
+  async function removeStaff(userId){
+    if(currentUser && userId === currentUser.id){ showToast('Vous ne pouvez pas vous retirer vous-même', true); return; }
+    if(!confirm('Retirer ce membre de l\'équipe ?')) return;
+    const { data, error } = await sb.from('staff_roles').delete().eq('user_id', userId).select();
+    if(error || !data || data.length === 0){ showToast('Retrait impossible', true); return; }
+    await loadStaffList();
+    showToast('Membre retiré');
+    renderSettings();
+  }
+  async function deleteItem(kind, id){
+    if(!canModerate()) return;
+    const msg = kind === 'alert' ? 'Supprimer cette alerte pour tout le monde ?' : 'Supprimer ce signalement pour tout le monde ?';
+    if(!confirm(msg)) return;
+    const table = kind === 'alert' ? 'alerts' : 'ratings';
+    try{
+      const { data, error } = await sb.from(table).delete().eq('id', id).select();
+      if(error) throw error;
+      if(!data || data.length === 0){ showToast('Suppression refusée (droits insuffisants)', true); return; }
+      if(kind === 'alert') allAlerts = allAlerts.filter(a => a.id !== id);
+      else allRatings = allRatings.filter(r => r.id !== id);
+      showToast('Supprimé');
+      render();
+    }catch(e){
+      showToast('Suppression impossible : ' + (e.message || ''), true);
+    }
+  }
+
   // ---------------- PRÉFÉRENCES LOCALES (localStorage, propres à cet appareil) ----------------
   const localPrefs = {
     get(key){ try{ return localStorage.getItem('fiabus:'+key); }catch(e){ return null; } },
@@ -872,12 +981,24 @@
           allRatings.unshift(entry);
           render();
         })
+        .on('postgres_changes', { event:'DELETE', schema:'public', table:'ratings' }, (payload)=>{
+          const id = payload.old && payload.old.id;
+          if(!id) return;
+          allRatings = allRatings.filter(r => r.id !== id);
+          render();
+        })
         .subscribe();
       sb.channel('alerts-live')
         .on('postgres_changes', { event:'INSERT', schema:'public', table:'alerts' }, (payload)=>{
           const a = rowToAlert(payload.new);
           if(allAlerts.some(x => x.id === a.id)) return;
           allAlerts.unshift(a);
+          render();
+        })
+        .on('postgres_changes', { event:'DELETE', schema:'public', table:'alerts' }, (payload)=>{
+          const id = payload.old && payload.old.id;
+          if(!id) return;
+          allAlerts = allAlerts.filter(a => a.id !== id);
           render();
         })
         .subscribe();
@@ -1024,6 +1145,7 @@
         ${period ? `<div class="alert-message mono" style="opacity:.8;">${period}</div>` : ''}
         ${a.message ? `<div class="alert-message">${escapeHtml(a.message)}</div>` : ''}
         <div class="alert-foot">${escapeHtml(a.pseudo || 'Anonyme')}</div>
+        ${canModerate() ? `<button class="del-btn" data-del-alert="${escapeHtml(a.id)}">🗑️ Supprimer</button>` : ''}
       </div>`;
   }
 
@@ -1031,7 +1153,11 @@
   function render(){
     if(currentView.name === 'dashboard') renderDashboard();
     else if(currentView.name === 'detail') renderDetail(currentView.line);
-    else if(currentView.name === 'settings') renderSettings();
+    else if(currentView.name === 'settings'){
+      const ae = document.activeElement;
+      if(ae && view.contains(ae) && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return; // ne pas effacer une saisie en cours
+      renderSettings();
+    }
   }
 
   function renderDashboard(){
@@ -1168,6 +1294,7 @@
             <div class="pass-foot">
               <span>${escapeHtml(r.pseudo || 'Anonyme')} · ${timeAgo(r.createdAt)}</span>
             </div>
+            ${canModerate() ? `<button class="del-btn" data-del-rating="${escapeHtml(r.id)}">🗑️ Supprimer</button>` : ''}
           </div>`;
         return;
       }
@@ -1183,6 +1310,7 @@
             ${r.bus ? `<span class="bus-chip">Bus ${escapeHtml(r.bus)}</span>` : ''}
             <span>${escapeHtml(r.pseudo || 'Anonyme')} · ${timeAgo(r.createdAt)}</span>
           </div>
+          ${canModerate() ? `<button class="del-btn" data-del-rating="${escapeHtml(r.id)}">🗑️ Supprimer</button>` : ''}
         </div>`;
     });
 
@@ -1224,7 +1352,41 @@
       notifBlock += `<button class="ghost-btn danger-btn" id="disableNotifBtn" style="margin-top:10px;">🔕 Désactiver les notifications</button>`;
     }
 
+    let teamBlock = '';
+    if(!currentUser){
+      teamBlock = `
+        <p>Réservé à l'équipe de modération.</p>
+        <div class="field"><label>Email</label><input type="email" id="authEmail" autocomplete="username"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="authPassword" autocomplete="current-password"></div>
+        <button class="ghost-btn" id="authLoginBtn">Se connecter</button>`;
+    }else{
+      teamBlock = `<p>Connecté : <b>${escapeHtml(currentUser.email || '')}</b>
+        ${currentRole ? `<span class="role-badge">${currentRole === 'admin' ? 'Administrateur' : 'Staff'}</span>` : `<span style="color:var(--muted);">(aucun rôle attribué)</span>`}</p>`;
+      if(canModerate()){
+        teamBlock += `<p>Vous pouvez supprimer les alertes et les signalements (bouton 🗑️ sur chaque élément).</p>`;
+      }
+      if(currentRole === 'admin'){
+        teamBlock += `<h3 style="margin-top:14px;">Équipe</h3>` + (staffList.length
+          ? staffList.map(m => `<div class="staff-row">
+              <span>${escapeHtml(m.email || m.user_id)} <span class="role-badge">${m.role === 'admin' ? 'Administrateur' : 'Staff'}</span></span>
+              ${currentUser && m.user_id === currentUser.id ? '' : `<button class="ghost-btn danger-btn" data-remove-staff="${escapeHtml(m.user_id)}">Retirer</button>`}
+            </div>`).join('')
+          : `<p>Aucun membre pour l'instant.</p>`) + `
+          <div class="field" style="margin-top:12px;"><label>Ajouter un membre (son compte doit déjà exister)</label>
+            <input type="email" id="staffEmail" placeholder="email du membre"></div>
+          <div class="field"><label>Rôle</label>
+            <select id="staffRole"><option value="staff">Staff (supprime alertes et signalements)</option><option value="admin">Administrateur (+ gère l'équipe)</option></select></div>
+          <button class="ghost-btn" id="staffAddBtn">Ajouter à l'équipe</button>`;
+      }
+      teamBlock += `<button class="ghost-btn" id="authLogoutBtn" style="margin-top:12px;">Se déconnecter</button>`;
+    }
+
     view.innerHTML = `
+      <div class="section-label">Équipe de modération</div>
+      <div class="settings-block">
+        <h3>Espace équipe</h3>
+        ${teamBlock}
+      </div>
       <div class="section-label">Notifications</div>
       <div class="settings-block">
         <h3>Alertes en direct</h3>
@@ -1246,6 +1408,19 @@
       </div>
     `;
 
+    const loginBtn = document.getElementById('authLoginBtn');
+    if(loginBtn) loginBtn.addEventListener('click', ()=>{
+      signIn(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
+    });
+    const logoutBtn = document.getElementById('authLogoutBtn');
+    if(logoutBtn) logoutBtn.addEventListener('click', signOut);
+    const staffAddBtn = document.getElementById('staffAddBtn');
+    if(staffAddBtn) staffAddBtn.addEventListener('click', ()=>{
+      addStaff(document.getElementById('staffEmail').value.trim(), document.getElementById('staffRole').value);
+    });
+    view.querySelectorAll('[data-remove-staff]').forEach(b=>{
+      b.addEventListener('click', ()=> removeStaff(b.getAttribute('data-remove-staff')));
+    });
     const clearBtn = document.getElementById('clearLocalBtn');
     if(clearBtn) clearBtn.addEventListener('click', ()=>{
       clearLocalData();
@@ -1659,6 +1834,15 @@
     rememberLine(savedLine);
   });
 
+  // ---------------- SUPPRESSION (staff / admin) ----------------
+  view.addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-del-alert],[data-del-rating]');
+    if(!b) return;
+    e.stopPropagation();
+    if(b.hasAttribute('data-del-alert')) deleteItem('alert', b.getAttribute('data-del-alert'));
+    else deleteItem('rating', b.getAttribute('data-del-rating'));
+  });
+
   // ---------------- INIT ----------------
   async function init(){
     render();
@@ -1666,6 +1850,7 @@
     await loadRatings();
     render();
     subscribeToLiveUpdates();
+    initAuth().then(()=> render());
     await initPushState();
     if(currentView.name === 'settings') renderSettings();
   }
